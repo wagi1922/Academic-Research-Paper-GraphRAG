@@ -1,0 +1,387 @@
+<mxfile host="app.diagrams.net" modified="2026-11-14T07:30:00.000Z" agent="5.0 (Windows)" etag="capstone-graphrag-architecture" version="24.6.3" type="device">
+  <diagram id="page-1" name="System Context Diagram">
+    <mxGraphModel dx="1000" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- User Researcher -->
+        <mxCell id="user" value="👤 Peneliti / Mahasiswa" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="200" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <!-- External Systems -->
+        <mxCell id="arxiv" value="📚 arXiv / Semantic Scholar" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="50" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="openrouter" value="🤖 OpenRouter API\n(LLM + Embeddings)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="150" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="grobid" value="📄 Grobid / LlamaParse\n(PDF Parsing)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="250" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ollama" value="🏠 Ollama Local\n(Fallback LLM/Embed)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#C2185B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="350" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <!-- GraphRAG System -->
+        <mxCell id="system" value="🔬 GraphRAG System\nAcademic & Research Paper Knowledge Engine" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=16;fontStyle=1;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="250" y="150" width="280" height="250" as="geometry"/>
+        </mxCell>
+        <!-- Outputs -->
+        <mxCell id="answer" value="💬 Jawaban + Sitasi\n[Paper ID, Halaman]" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="400" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="graphviz" value="🕸️ Visualisasi Knowledge Graph\n(React Flow / D3)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="450" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Edges -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="user" target="system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;dashed=1;" edge="1" parent="1" source="arxiv" target="system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="openrouter" target="system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6A1B9A;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="grobid" target="system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C2185B;strokeWidth=2;endArrow=block;dashed=1;" edge="1" parent="1" source="ollama" target="system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="system" target="answer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="system" target="graphviz">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="page-2" name="Container Diagram">
+    <mxGraphModel dx="1000" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Container: Docker Compose -->
+        <mxCell id="docker" value="🐳 Docker Compose Network (graphrag-network)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E8EAED;strokeColor=#37474F;fontSize=14;fontStyle=1;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="50" width="1000" height="700" as="geometry"/>
+        </mxCell>
+        <!-- Neo4j Container -->
+        <mxCell id="neo4j" value="🗄️ Neo4j 5.18 Community\nPort: 7474 (Browser), 7687 (Bolt)\nPlugins: APOC, GDS\nVector Index Enabled" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#00608C;strokeColor=#00364D;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="100" y="150" width="250" height="200" as="geometry"/>
+        </mxCell>
+        <!-- Backend Container -->
+        <mxCell id="backend" value="🚀 FastAPI Backend\nPort: 8000\nPython 3.11+\nUvicorn + Gunicorn" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#009688;strokeColor=#004D40;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="400" y="150" width="250" height="200" as="geometry"/>
+        </mxCell>
+        <!-- Grobid Container -->
+        <mxCell id="grobid_c" value="📄 Grobid 0.8.2\nPort: 8070\nJava 11\nMemory: 4GB limit" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#311B92;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="700" y="150" width="250" height="200" as="geometry"/>
+        </mxCell>
+        <!-- Volumes -->
+        <mxCell id="volumes" value="💾 Persistent Volumes\n• neo4j_data\n• neo4j_logs\n• neo4j_import\n• neo4j_plugins" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;fontSize=11;" vertex="1" parent="docker">
+          <mxGeometry x="100" y="450" width="250" height="120" as="geometry"/>
+        </mxCell>
+        <!-- External APIs -->
+        <mxCell id="ext_apis" value="🌐 External APIs\n• OpenRouter (LLM/Embedding)\n• Crossref / Semantic Scholar\n• arXiv API\n• Ollama Local (fallback)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;dashed=1;" vertex="1" parent="docker">
+          <mxGeometry x="400" y="450" width="550" height="150" as="geometry"/>
+        </mxCell>
+        <!-- Backend Internal Modules -->
+        <mxCell id="modules" value="📦 Backend Modules\n• app.api.v1.endpoints (ingest, query, graph)\n• app.ingestion (parser, chunker, extractor, graph_writer)\n• app.retrieval (vector_search, graph_traversal, context_builder, synthesizer)\n• app.core (config, neo4j_driver, neo4j_migrate)\n• app.schemas (entities, Pydantic models)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="backend">
+          <mxGeometry x="10" y="10" width="230" height="180" as="geometry"/>
+        </mxCell>
+        <!-- Edges -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#00608C;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="backend" target="neo4j">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="525" y="250" as="sourcePoint"/><mxPoint x="350" y="250" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6A1B9A;strokeWidth=2;endArrow=block;dashed=1;" edge="1" parent="1" source="backend" target="grobid_c">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="650" y="250" as="sourcePoint"/><mxPoint x="700" y="250" as="targetPoint"/></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="page-3" name="Component Diagram">
+    <mxGraphModel dx="1000" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Ingestion Pipeline -->
+        <mxCell id="ingestion" value="📥 INGESTION PIPELINE" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=14;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="50" width="450" height="500" as="geometry"/>
+        </mxCell>
+        <mxCell id="pdf_input" value="📄 PDF Input\n(Upload / DOI / URL)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="10" y="10" width="150" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="parser" value="🔧 Parser\nGrobid / LlamaParse\n→ Raw Text + Metadata" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="10" y="80" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="chunker" value="✂️ Chunker\nStrategies: fixed_512_50, fixed_1024_100,\nsemantic_nomic, proposition_gpt4o_mini\n→ Chunks dengan overlap" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="240" y="80" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="extractor" value="🧠 Entity & Relation Extractor\nLLM + Pydantic (Instructor)\n→ Entities: Concept, Method, Dataset, Metric\n→ Relations: USES, PROPOSES, EVALUATES, CITES" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="10" y="180" width="430" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="graph_writer" value="💾 Graph Writer (Batch Cypher)\nNeo4j Python Driver + APOC\n→ Nodes: Paper, Chunk, Entity\n→ Edges: HAS_CHUNK, MENTIONS, RELATES_TO\n→ Vector Index: chunk_embedding" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="10" y="300" width="430" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="embedder" value="🔢 Embedding Model\nOpenRouter / Olloma\n→ Vector per Chunk (1536-d / 768-d)\n→ Neo4j Vector Index Upsert" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+          <mxGeometry x="10" y="420" width="430" height="70" as="geometry"/>
+        </mxCell>
+        <!-- Query Pipeline -->
+        <mxCell id="query" value="🔍 QUERY PIPELINE" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=14;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="550" y="50" width="450" height="500" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_query" value="❓ User Query\n+ Params (top_k, depth, stream)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="10" y="10" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="intent" value="🎯 Intent & Entity Extraction\nLLM → identified entities, query type" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="10" y="80" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="vector_search" value="🔍 Vector Search\nNeo4j Vector Index\n→ top-k Seed Papers" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="240" y="80" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="graph_traversal" value="🕸️ Graph Traversal\nCypher: depth hops from seeds\n→ Subgraph: Nodes + Edges" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="10" y="170" width="430" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="context_builder" value="🏗️ Context Builder\nAssemble: Vector Chunks + Graph Paths + Entities\n→ Prompt Template" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="10" y="260" width="430" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="synthesizer" value="✍️ LLM Synthesis\nOpenRouter / Ollama\n→ Answer + Citations [Paper ID]" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="10" y="360" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="citation_validator" value="✅ Citation Validator\nCheck sources exist in subgraph\n→ Final Answer" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+          <mxGeometry x="240" y="360" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="response" value="📤 Response\n{answer, sources, graph_path, metadata}" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;fontStyle=1;" vertex="1" parent="query">
+          <mxGeometry x="10" y="450" width="430" height="40" as="geometry"/>
+        </mxCell>
+        <!-- Edges Ingestion -->
+        <mxCell id="ie1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="pdf_input" target="parser">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ie2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="parser" target="chunker">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ie3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="chunker" target="extractor">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ie4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="extractor" target="graph_writer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ie5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="graph_writer" target="embedder">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Edges Query -->
+        <mxCell id="qe1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="user_query" target="intent">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="intent" target="vector_search">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="vector_search" target="graph_traversal">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="graph_traversal" target="context_builder">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="context_builder" target="synthesizer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="synthesizer" target="citation_validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="qe7" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="citation_validator" target="response">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="page-4" name="Sequence Diagram">
+    <mxGraphModel dx="1000" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Actors -->
+        <mxCell id="user" value="👤 User" style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="50" y="50" width="60" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="api" value="🚀 FastAPI\n/api/v1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="50" width="150" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="ingestion_svc" value="📥 Ingestion\nService" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="400" y="50" width="150" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="grobid_svc" value="📄 Grobid" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="600" y="50" width="120" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="llm" value="🤖 LLM\n(OpenRouter/Ollama)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#C2185B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="780" y="50" width="150" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="neo4j_svc" value="🗄️ Neo4j\n+ Vector Index" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#E8EAED;strokeColor=#37474F;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="50" width="120" height="120" as="geometry"/>
+        </mxCell>
+        <!-- Lifelines -->
+        <mxCell id="l1" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="l2" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="475" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="l4" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="l5" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="855" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="l6" style="shape=line;strokeColor=#999999;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="170" width="0" height="600" as="geometry"/>
+        </mxCell>
+        <!-- INGESTION FLOW -->
+        <mxCell id="ingest_title" value="=== INGESTION FLOW ===" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="180" width="1070" height="30" as="geometry"/>
+        </mxCell>
+        <!-- 1. POST /papers/ingest -->
+        <mxCell id="s1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="user" target="api">
+          <mxGeometry relative="1" as="geometry" y="220">
+            <mxPoint x="110" y="220" as="sourcePoint"/>
+            <mxPoint x="200" y="220" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s1_label" value="1. POST /api/v1/papers/ingest\n(file, title, year, doi, chunking_strategy)" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="110" y="200" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 2. Forward to Ingestion Service -->
+        <mxCell id="s2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="api" target="ingestion_svc">
+          <mxGeometry relative="1" as="geometry" y="260">
+            <mxPoint x="350" y="260" as="sourcePoint"/>
+            <mxPoint x="400" y="260" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s2_label" value="2. IngestionService.ingest_paper()" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#E65100;" vertex="1" parent="1">
+          <mxGeometry x="350" y="240" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 3. Parse PDF -->
+        <mxCell id="s3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A1B9A;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="ingestion_svc" target="grobid_svc">
+          <mxGeometry relative="1" as="geometry" y="300">
+            <mxPoint x="550" y="300" as="sourcePoint"/>
+            <mxPoint x="600" y="300" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s3_label" value="3. GrobidClient.parse_pdf()\n→ raw_text, metadata" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#6A1B9A;" vertex="1" parent="1">
+          <mxGeometry x="550" y="280" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 4. Chunk -->
+        <mxCell id="s4" value="4. Chunker.chunk()\n→ List[Chunk]" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="340" width="150" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 5. Extract Entities (per chunk) -->
+        <mxCell id="s5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#C2185B;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="ingestion_svc" target="llm">
+          <mxGeometry relative="1" as="geometry" y="380">
+            <mxPoint x="550" y="380" as="sourcePoint"/>
+            <mxPoint x="780" y="380" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s5_label" value="5. LLM.extract_entities(chunk)\n→ Entities + Relations (JSON)" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#C2185B;" vertex="1" parent="1">
+          <mxGeometry x="550" y="360" width="150" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 6. Batch Write to Neo4j -->
+        <mxCell id="s6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#37474F;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="ingestion_svc" target="neo4j_svc">
+          <mxGeometry relative="1" as="geometry" y="420">
+            <mxPoint x="550" y="420" as="sourcePoint"/>
+            <mxPoint x="1000" y="420" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s6_label" value="6. GraphWriter.batch_write()\n(Cypher MERGE, APOC)\n→ Nodes + Edges" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="550" y="400" width="150" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 7. Embedding -->
+        <mxCell id="s7" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#C2185B;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="ingestion_svc" target="llm">
+          <mxGeometry relative="1" as="geometry" y="460">
+            <mxPoint x="550" y="460" as="sourcePoint"/>
+            <mxPoint x="780" y="460" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s7_label" value="7. EmbeddingModel.embed(chunks)\n→ vectors" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#C2185B;" vertex="1" parent="1">
+          <mxGeometry x="550" y="440" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 8. Vector Index Upsert -->
+        <mxCell id="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#37474F;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="ingestion_svc" target="neo4j_svc">
+          <mxGeometry relative="1" as="geometry" y="500">
+            <mxPoint x="550" y="500" as="sourcePoint"/>
+            <mxPoint x="1000" y="500" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s8_label" value="8. VectorIndex.upsert(vectors)\n→ Neo4j Vector Index" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="550" y="480" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 9. Return job_id -->
+        <mxCell id="s9" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;fontSize=10;dashed=1;" edge="1" parent="1" source="api" target="user">
+          <mxGeometry relative="1" as="geometry" y="540">
+            <mxPoint x="200" y="540" as="sourcePoint"/>
+            <mxPoint x="110" y="540" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s9_label" value="9. Return {job_id, status}\nAsync polling: GET /status/{job_id}" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="110" y="520" width="150" height="40" as="geometry"/>
+        </mxCell>
+        <!-- QUERY FLOW -->
+        <mxCell id="query_title" value="=== QUERY FLOW ===" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="580" width="1070" height="30" as="geometry"/>
+        </mxCell>
+        <!-- 1. POST /query -->
+        <mxCell id="q1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="user" target="api">
+          <mxGeometry relative="1" as="geometry" y="620">
+            <mxPoint x="110" y="620" as="sourcePoint"/>
+            <mxPoint x="200" y="620" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="q1_label" value="1. POST /api/v1/query/\n{query, top_k=5, depth=2}" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="110" y="600" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 2. Vector Search -->
+        <mxCell id="q2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#37474F;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="api" target="neo4j_svc">
+          <mxGeometry relative="1" as="geometry" y="660">
+            <mxPoint x="350" y="660" as="sourcePoint"/>
+            <mxPoint x="1000" y="660" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="q2_label" value="2. VectorSearch.search(query_emb, top_k)\n→ seed_paper_ids" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="350" y="640" width="150" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 3. Graph Traversal -->
+        <mxCell id="q3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#37474F;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="api" target="neo4j_svc">
+          <mxGeometry relative="1" as="geometry" y="700">
+            <mxPoint x="350" y="700" as="sourcePoint"/>
+            <mxPoint x="1000" y="700" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="q3_label" value="3. GraphTraversal.traverse(seeds, depth)\n→ subgraph (nodes, edges, paths)" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="350" y="680" width="180" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 4. LLM Synthesis -->
+        <mxCell id="q4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#C2185B;strokeWidth=2;endArrow=block;fontSize=10;" edge="1" parent="1" source="api" target="llm">
+          <mxGeometry relative="1" as="geometry" y="740">
+            <mxPoint x="350" y="740" as="sourcePoint"/>
+            <mxPoint x="780" y="740" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="q4_label" value="4. Synthesizer.synthesize(context)\n→ answer + citations" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#C2185B;" vertex="1" parent="1">
+          <mxGeometry x="350" y="720" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <!-- 5. Return Response -->
+        <mxCell id="q5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;fontSize=10;dashed=1;" edge="1" parent="1" source="api" target="user">
+          <mxGeometry relative="1" as="geometry" y="780">
+            <mxPoint x="200" y="780" as="sourcePoint"/>
+            <mxPoint x="110" y="780" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="q5_label" value="5. Return {answer, sources, graph_path, metadata}" style="shape=connector;whiteSpace=wrap;html=1;fontSize=9;strokeColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="110" y="760" width="150" height="40" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
