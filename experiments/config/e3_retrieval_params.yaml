@@ -1,0 +1,86 @@
+# Experiment E3: Retrieval Parameters (top-k, depth)
+# Find optimal top-k and graph traversal depth for GraphRAG
+
+experiment:
+  name: "E3_Retrieval_Params"
+  description: "Optimize top-k and graph traversal depth for GraphRAG"
+  version: "1.0"
+
+retrieval_params:
+  top_k_values: [3, 5, 8, 10, 15, 20]
+  depth_values: [1, 2, 3]
+
+  combinations:
+    - top_k: 3
+      depth: 1
+    - top_k: 3
+      depth: 2
+    - top_k: 5
+      depth: 1
+    - top_k: 5
+      depth: 2
+    - top_k: 5
+      depth: 3
+    - top_k: 8
+      depth: 2
+    - top_k: 8
+      depth: 3
+    - top_k: 10
+      depth: 2
+    - top_k: 10
+      depth: 3
+    - top_k: 15
+      depth: 2
+    - top_k: 20
+      depth: 2
+
+# Fixed settings for fair comparison
+fixed_config:
+  chunking_strategy: "fixed_512_50"
+  embedding_model: "openrouter/nomic-embed-text"
+  llm_model: "openrouter/gpt-4o-mini"
+  vector_weight: 0.7
+  keyword_weight: 0.3
+
+evaluation:
+  metrics:
+    - "retrieval_precision@5"
+    - "retrieval_recall@10"
+    - "answer_f1"
+    - "answer_faithfulness"
+    - "citation_accuracy"
+    - "context_coverage"
+    - "latency_ms"
+    - "tokens_input_avg"
+    - "tokens_output_avg"
+    - "graph_nodes_retrieved_avg"
+    - "graph_edges_retrieved_avg"
+
+  test_queries: 30
+  test_papers: 20
+
+  gold_standard_path: "experiments/data/gold_queries.jsonl"
+
+ablation:
+  - name: "vector_only"
+    description: "Vector search only, no graph traversal"
+    config:
+      depth: 0
+      use_graph: false
+
+  - name: "graph_only"
+    description: "Graph traversal only, no vector search (needs seed papers)"
+    config:
+      top_k: 0
+      use_vector: false
+
+  - name: "hybrid_vector_graph"
+    description: "Full GraphRAG with both vector and graph"
+    config:
+      use_vector: true
+      use_graph: true
+
+output:
+  results_dir: "experiments/results/e3_retrieval_params"
+  save_retrieval_details: true
+  save_context: true

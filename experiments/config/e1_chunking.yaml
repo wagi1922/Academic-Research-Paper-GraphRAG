@@ -1,0 +1,70 @@
+# Experiment E1: Chunking Strategy Comparison
+# Compare fixed-size (512/50, 1024/100) vs semantic vs proposition-based chunking
+
+experiment:
+  name: "E1_Chunking_Strategy"
+  description: "Compare chunking strategies for retrieval quality"
+  version: "1.0"
+
+chunking:
+  strategies:
+    - name: "fixed_512_50"
+      type: "fixed"
+      params:
+        chunk_size: 512
+        chunk_overlap: 50
+      description: "Fixed-size 512 chars with 50 overlap"
+
+    - name: "fixed_1024_100"
+      type: "fixed"
+      params:
+        chunk_size: 1024
+        chunk_overlap: 100
+      description: "Fixed-size 1024 chars with 100 overlap"
+
+    - name: "semantic_nomic"
+      type: "semantic"
+      params:
+        embedding_model: "nomic-embed-text"
+        breakpoint_threshold_type: "percentile"
+        breakpoint_threshold_amount: 95.0
+        min_chunk_size: 100
+      description: "Semantic chunking with nomic-embed-text"
+
+    - name: "semantic_instructor"
+      type: "semantic"
+      params:
+        embedding_model: "hkunlp/instructor-xl"
+        breakpoint_threshold_type: "percentile"
+        breakpoint_threshold_amount: 95.0
+        min_chunk_size: 100
+      description: "Semantic chunking with Instructor-XL"
+
+    - name: "proposition_gpt4o_mini"
+      type: "proposition"
+      params:
+        llm_model: "openrouter/gpt-4o-mini"
+        max_propositions_per_chunk: 1
+      description: "Proposition-based chunking with GPT-4o-mini"
+
+evaluation:
+  metrics:
+    - "retrieval_precision@5"
+    - "retrieval_recall@10"
+    - "answer_f1"
+    - "answer_faithfulness"
+    - "citation_accuracy"
+    - "latency_ms"
+    - "chunk_count_avg"
+    - "token_usage_avg"
+
+  test_queries: 30  # Number of test queries
+  test_papers: 20   # Number of papers in test corpus
+
+  gold_standard_path: "experiments/data/gold_queries.jsonl"
+
+output:
+  results_dir: "experiments/results/e1_chunking"
+  save_chunks: true
+  save_embeddings: false
+  save_retrieval_details: true

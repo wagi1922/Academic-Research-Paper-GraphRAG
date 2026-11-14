@@ -1,0 +1,87 @@
+# Experiment E2: Embedding Model Comparison
+# Compare embedding models for vector search quality
+
+experiment:
+  name: "E2_Embedding_Model"
+  description: "Compare embedding models for academic paper retrieval"
+  version: "1.0"
+
+embeddings:
+  models:
+    - name: "text-embedding-3-small"
+      provider: "openrouter"
+      model_id: "openrouter/text-embedding-3-small"
+      dimensions: 1536
+      description: "OpenAI text-embedding-3-small via OpenRouter"
+
+    - name: "text-embedding-3-large"
+      provider: "openrouter"
+      model_id: "openrouter/text-embedding-3-large"
+      dimensions: 3072
+      description: "OpenAI text-embedding-3-large via OpenRouter"
+
+    - name: "nomic-embed-text"
+      provider: "openrouter"
+      model_id: "openrouter/nomic-embed-text"
+      dimensions: 768
+      description: "Nomic embed-text v1.5 via OpenRouter"
+
+    - name: "nomic-embed-text-v1.5"
+      provider: "openrouter"
+      model_id: "openrouter/nomic-embed-text-v1.5"
+      dimensions: 768
+      description: "Nomic embed-text v1.5 (updated)"
+
+    - name: "indobert-base"
+      provider: "local"
+      model_id: "indobenchmark/indobert-base-p1"
+      dimensions: 768
+      description: "IndoBERT base (Indonesian language optimized)"
+
+    - name: "indobert-large"
+      provider: "local"
+      model_id: "indobenchmark/indobert-large-p1"
+      dimensions: 1024
+      description: "IndoBERT large (Indonesian language optimized)"
+
+    - name: "m3e-base"
+      provider: "local"
+      model_id: "moka-ai/m3e-base"
+      dimensions: 768
+      description: "M3E base (multilingual Chinese/English)"
+
+    - name: "bge-m3"
+      provider: "local"
+      model_id: "BAAI/bge-m3"
+      dimensions: 1024
+      description: "BGE-M3 (multilingual, multi-granularity)"
+
+chunking:
+  # Fixed chunking for fair comparison
+  strategy: "fixed_512_50"
+  params:
+    chunk_size: 512
+    chunk_overlap: 50
+
+evaluation:
+  metrics:
+    - "retrieval_precision@5"
+    - "retrieval_recall@10"
+    - "retrieval_mrr@10"
+    - "retrieval_ndcg@10"
+    - "answer_f1"
+    - "answer_faithfulness"
+    - "citation_accuracy"
+    - "latency_ms"
+    - "embedding_dim"
+    - "index_size_mb"
+
+  test_queries: 30
+  test_papers: 20
+
+  gold_standard_path: "experiments/data/gold_queries.jsonl"
+
+output:
+  results_dir: "experiments/results/e2_embedding"
+  save_embeddings: true
+  save_index_stats: true

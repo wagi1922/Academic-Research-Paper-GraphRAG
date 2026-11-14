@@ -1,0 +1,131 @@
+# Experiment E4: Ablation Study
+# Test contribution of each GraphRAG component
+
+experiment:
+  name: "E4_Ablation_Study"
+  description: "Ablation study to measure contribution of each GraphRAG component"
+  version: "1.0"
+
+configurations:
+  - name: "full_graphrag"
+    description: "Full GraphRAG: vector + graph + entities + synthesis"
+    enabled:
+      vector_search: true
+      graph_traversal: true
+      entity_extraction: true
+      context_builder: true
+      citation_validation: true
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 5
+    depth: 2
+
+  - name: "vector_only"
+    description: "Vector search only (traditional RAG)"
+    enabled:
+      vector_search: true
+      graph_traversal: false
+      entity_extraction: false
+      context_builder: true  # Uses only vector chunks
+      citation_validation: true
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 10  # More chunks to compensate
+    depth: 0
+
+  - name: "vector_plus_entities"
+    description: "Vector search + entity extraction, no graph"
+    enabled:
+      vector_search: true
+      graph_traversal: false
+      entity_extraction: true
+      context_builder: true
+      citation_validation: true
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 5
+    depth: 0
+
+  - name: "vector_plus_graph"
+    description: "Vector search + graph traversal, no entity extraction"
+    enabled:
+      vector_search: true
+      graph_traversal: true
+      entity_extraction: false
+      context_builder: true
+      citation_validation: true
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 5
+    depth: 2
+
+  - name: "no_citation_validation"
+    description: "Full GraphRAG without citation validation"
+    enabled:
+      vector_search: true
+      graph_traversal: true
+      entity_extraction: true
+      context_builder: true
+      citation_validation: false
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 5
+    depth: 2
+
+  - name: "graph_only_seeded"
+    description: "Graph traversal from known seed papers (oracle)"
+    enabled:
+      vector_search: false
+      graph_traversal: true
+      entity_extraction: true
+      context_builder: true
+      citation_validation: true
+    chunking_strategy: "fixed_512_50"
+    embedding_model: "openrouter/nomic-embed-text"
+    llm_model: "openrouter/gpt-4o-mini"
+    top_k: 0
+    depth: 2
+    # Uses gold standard seed papers
+
+evaluation:
+  metrics:
+    - "answer_f1"
+    - "answer_faithfulness"
+    - "citation_accuracy"
+    - "citation_coverage"
+    - "hallucination_rate"
+    - "unsupported_claims_rate"
+    - "latency_ms"
+    - "tokens_input_avg"
+    - "tokens_output_avg"
+    - "cost_usd_per_query"
+
+  test_queries: 40  # More queries for statistical significance
+  test_papers: 20
+
+  gold_standard_path: "experiments/data/gold_queries.jsonl"
+
+  # Query categories for fine-grained analysis
+  query_categories:
+    - "factoid"
+    - "comparison"
+    - "methodology"
+    - "dataset_usage"
+    - "citation_chain"
+    - "concept_explanation"
+
+statistical_testing:
+  method: "wilcoxon_signed_rank"  # Paired comparison
+  alpha: 0.05
+  multiple_comparison_correction: "bonferroni"
+
+output:
+  results_dir: "experiments/results/e4_ablation"
+  save_detailed_predictions: true
+  save_per_query_metrics: true
+  generate_latex_tables: true
