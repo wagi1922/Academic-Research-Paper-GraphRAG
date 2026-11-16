@@ -27,9 +27,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/papers", tags=["ingestion"])
 
-# In-memory job tracking (replace with Redis/DB in production)
-ingestion_jobs: dict[str, dict] = {}
-
 
 class IngestJobStatus(BaseModel):
     job_id: str
@@ -38,6 +35,10 @@ class IngestJobStatus(BaseModel):
     message: str
     result: Optional[IngestResponse] = None
     error: Optional[str] = None
+
+
+# In-memory job tracking (replace with Redis/DB in production)
+ingestion_jobs: dict[str, IngestJobStatus] = {}
 
 
 @router.post("/ingest", response_model=IngestResponse)
@@ -118,9 +119,9 @@ async def _process_ingestion(
         job.progress = 10
         job.message = "Parsing PDF..."
 
-        parser = PDFParser()
+        parser = PDFParser(grobid_url=settings.grobid_url)
         content = await file.read()
-        parse_result = await parser.parse_pdf_grobid_bytes(content, file.filename)
+        parse_result = await parser.parse_pdf_grobid_bytes(content, file.filename or "document.pdf")
 
         if not parse_result or not parse_result.get("full_text"):
             raise ValueError("Failed to extract text from PDF")
@@ -147,15 +148,15 @@ async def _process_ingestion(
         job.message = "Extracting entities..."
 
         entities = ExtractedEntities()
-        if settings.openrouter_api_key:
+        if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("sk-or-v1-YOUR_ACTUAL_KEY_HERE"):
             extractor = EntityExtractor(
                 api_key=settings.openrouter_api_key,
                 model=settings.llm_model,
             )
             entities = await extractor.extract_from_chunks([c.text for c in chunks], title)
         else:
-            job.message = "Skipping entity extraction (no OpenRouter API key)"
-            logger.warning("OpenRouter API key not set, skipping entity extraction")
+            job.message = "Skipping entity extraction (no valid OpenRouter API key)"
+            logger.warning("OpenRouter API key not set or placeholder, skipping entity extraction")
 
         # Step 4: Write to Neo4j
         job.progress = 70
@@ -218,9 +219,13 @@ async def _process_ingestion(
 async def ingest_batch(
     background_tasks: BackgroundTasks,
     files: list[UploadFile] = File(...),
+    titles: list[str] = Form([]),
+    years: list[int] = Form([]),
+    dois: list[str] = Form([]),
+    venues: list[str] = Form([]),
     chunking_strategy: str = Form("fixed_512_50"),
 ):
-    """Ingest multiple papers at once."""
+    """Ingest multiple papers at once with optional metadata."""
     if len(files) > 20:
         raise HTTPException(status_code=400, detail="Maximum 20 files per batch")
 
@@ -236,6 +241,10 @@ async def ingest_batch(
         _process_batch_ingestion,
         job_id=job_id,
         files=files,
+        titles=titles,
+        years=years,
+        dois=dois,
+        venues=venues,
         chunking_strategy=chunking_strategy,
     )
 
@@ -245,9 +254,13 @@ async def ingest_batch(
 async def _process_batch_ingestion(
     job_id: str,
     files: list[UploadFile],
+    titles: list[str],
+    years: list[int],
+    dois: list[str],
+    venues: list[str],
     chunking_strategy: str,
 ):
-    """Background task for batch ingestion."""
+    """Background task for batch ingestion - full pipeline."""
     job = ingestion_jobs[job_id]
     job.status = "processing"
     total = len(files)
@@ -255,25 +268,92 @@ async def _process_batch_ingestion(
 
     for idx, file in enumerate(files):
         job.progress = int((idx / total) * 90)
-        job.message = f"Processing {idx+1}/{total}: {file.filename}"
+        job.message = f"Processing {idx+1}/{total}: {file.filename or f'file_{idx}'}"
 
         try:
-            # Simplified: just process each file
+            # Full ingestion pipeline per file
             content = await file.read()
-            parser = PDFParser()
-            parse_result = parser.parse_pdf_grobid(content)
+            filename = file.filename or f"document_{idx}.pdf"
+            
+            # Use provided metadata or derive from filename
+            title = titles[idx] if idx < len(titles) and titles[idx] else filename.replace(".pdf", "")
+            year = years[idx] if idx < len(years) and years[idx] else 2024
+            doi = dois[idx] if idx < len(dois) and dois[idx] else None
+            venue = venues[idx] if idx < len(venues) and venues[idx] else "arXiv"
+            
+            paper_id = doi or str(uuid.uuid4())[:12]
+            
+            # Step 1: Parse PDF
+            parser = PDFParser(grobid_url=settings.grobid_url)
+            parse_result = await parser.parse_pdf_grobid_bytes(content, filename)
 
-            if parse_result and parse_result.get("text"):
-                title = file.filename.replace(".pdf", "")
-                # Process similar to single ingest...
-                results.append({"file": file.filename, "status": "success"})
+            if not parse_result or not parse_result.get("full_text"):
+                results.append({"file": filename, "status": "failed", "error": "Parse failed"})
+                continue
+
+            full_text = parse_result["full_text"]
+            metadata = {
+                "title": title,
+                "year": year,
+                "doi": doi,
+                "venue": venue,
+                "keywords": [],
+                "sections": parse_result.get("sections", []),
+            }
+
+            # Step 2: Chunk text
+            chunker = get_chunker(chunking_strategy)
+            chunks = chunker.chunk(full_text, metadata)
+
+            # Step 3: Extract entities (optional - requires OpenRouter API key)
+            entities = ExtractedEntities()
+            if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("sk-or-v1-YOUR_ACTUAL_KEY_HERE"):
+                extractor = EntityExtractor(
+                    api_key=settings.openrouter_api_key,
+                    model=settings.llm_model,
+                )
+                entities = await extractor.extract_from_chunks([c.text for c in chunks], title)
             else:
-                results.append({"file": file.filename, "status": "failed", "error": "Parse failed"})
+                logger.warning("OpenRouter API key not set or placeholder, skipping entity extraction")
+
+            # Step 4: Write to Neo4j
+            paper = PaperCreate(
+                id=paper_id,
+                title=title,
+                abstract=full_text[:2000],
+                year=year,
+                doi=doi,
+                venue=venue,
+                keywords=[],
+            )
+
+            chunk_objects = []
+            for i, chunk in enumerate(chunks):
+                chunk_objects.append(ChunkCreate(
+                    id=f"{paper_id}_chunk_{i}",
+                    paper_id=paper_id,
+                    text=chunk.text,
+                    chunk_index=i,
+                    embedding=None,
+                    metadata=chunk.metadata,
+                ))
+
+            async for session in get_neo4j_session():
+                writer = GraphWriter(session)
+                stats = await writer.ingest_paper_with_entities(paper, entities, chunk_objects)
+
+            results.append({
+                "file": filename,
+                "status": "success",
+                "paper_id": paper_id,
+                "chunks": stats["chunks_created"],
+            })
 
         except Exception as e:
-            results.append({"file": file.filename, "status": "failed", "error": str(e)})
+            results.append({"file": filename, "status": "failed", "error": str(e)})
 
     job.progress = 100
     job.status = "completed"
-    job.message = f"Batch completed: {sum(1 for r in results if r['status']=='success')}/{total} successful"
-    job.result = {"results": results}
+    success_count = sum(1 for r in results if r.get('status') == 'success')
+    job.message = f"Batch completed: {success_count}/{total} successful"
+    job.result = None

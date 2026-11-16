@@ -63,7 +63,7 @@ SCHEMA_STATEMENTS = [
     FOR (p:Paper) ON (p.embedding)
     OPTIONS {
         indexConfig: {
-            `vector.dimensions`: 1536,
+            `vector.dimensions`: 768,
             `vector.similarity_function`: 'cosine'
         }
     }
@@ -89,7 +89,7 @@ CHUNK_STATEMENTS = [
     FOR (c:Chunk) ON (c.embedding)
     OPTIONS {
         indexConfig: {
-            `vector.dimensions`: 1536,
+            `vector.dimensions`: 768,
             `vector.similarity_function`: 'cosine'
         }
     }
@@ -185,16 +185,18 @@ async def drop_all_schema():
         async with driver.session(database=settings.neo4j_database) as session:
             # Drop constraints
             result = await session.run("SHOW CONSTRAINTS")
-            for record in result:
-                name = record.data().get("name")
+            constraints = await result.data()
+            for record in constraints:
+                name = record.get("name")
                 if name:
                     await session.run(f"DROP CONSTRAINT {name} IF EXISTS")
                     logger.info(f"Dropped constraint: {name}")
 
             # Drop indexes
             result = await session.run("SHOW INDEXES")
-            for record in result:
-                name = record.data().get("name")
+            indexes = await result.data()
+            for record in indexes:
+                name = record.get("name")
                 if name:
                     await session.run(f"DROP INDEX {name} IF EXISTS")
                     logger.info(f"Dropped index: {name}")

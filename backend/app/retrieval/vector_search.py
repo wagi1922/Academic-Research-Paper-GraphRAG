@@ -36,7 +36,7 @@ class VectorSearch:
             embedding=query_embedding,
             min_score=min_score,
         )
-        return [dict(record) for record in result]
+        return [dict(record) async for record in result]
 
     async def search_chunks(
         self,
@@ -66,7 +66,7 @@ class VectorSearch:
             params["paper_ids"] = paper_ids
 
         result = await self.session.run(base_query, params)
-        return [dict(record) for record in result]
+        return [dict(record) async for record in result]
 
     async def hybrid_search_papers(
         self,
@@ -109,4 +109,4 @@ async def get_papers_by_ids(session: AsyncSession, paper_ids: list[str]) -> list
         return []
     query = "MATCH (p:Paper) WHERE p.id IN $ids RETURN p"
     result = await session.run(query, ids=paper_ids)
-    return [dict(record["p"]) for record in result]
+    return [dict(record["p"]) async for record in result]

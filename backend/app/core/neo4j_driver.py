@@ -51,3 +51,8 @@ get_neo4j_session = get_session
 async def close_neo4j_driver():
     """Close the Neo4j driver connection."""
     await Neo4jDriver.close()
+
+
+def get_neo4j_driver():
+    """Get the Neo4j driver instance."""
+    return Neo4jDriver.get_driver()

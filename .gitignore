@@ -47,3 +47,17 @@ build/
 tmp/
 temp/
 *.tmp
+
+# Capstone project artifacts
+Proposal-Capstone-GraphRAG.docx
+Proposal-Capstone-GraphRAG.pdf
+Template.docx
+
+# Data folder
+data/
+scripts/
+qa_pairs.json
+experiment_E1_report.json
+
+# Generated notebooks / outputs
+*.ipynb

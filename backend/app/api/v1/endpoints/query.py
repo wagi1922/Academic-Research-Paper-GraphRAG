@@ -1,6 +1,6 @@
 """
 Query Endpoint
-Handles natural language queries with GraphRAG retrieval and synthesis.
+Handles natural language queries GraphRAG retrieval and synthesis.
 """
 
 import logging
@@ -33,8 +33,7 @@ async def query_graphrag(request: QueryRequest):
     Pipeline: vector search -> graph traversal -> context building -> LLM synthesis -> validation.
     """
     try:
-        async with get_neo4j_session() as session:
-            # Initialize components
+        async for session in get_neo4j_session():
             vector_search = VectorSearch(session)
             graph_traversal = GraphTraversal(session)
             context_builder = ContextBuilder(
@@ -46,39 +45,45 @@ async def query_graphrag(request: QueryRequest):
                 model=settings.llm_model,
             )
 
-            # Step 1: Generate query embedding (placeholder - needs embedding model)
-            # In production, call embedding API here
+            # Step 1: Generate query embedding
             query_embedding = await _get_query_embedding(request.query)
 
             # Step 2: Vector search for seed papers
             vector_results = await vector_search.search_papers(
-                query_embedding=query_embedding,
+                query_embedding,
                 top_k=request.top_k,
                 min_score=0.3,
             )
 
             if not vector_results:
                 return QueryResponseExtended(
-                    answer="Tidak ditemukan paper yang relevan untuk pertanyaan Anda.",
+                    answer="Tidak ditemukan paper yang relevan dengan pertanyaan Anda.",
                     sources=[],
                     graph_path=[],
                     extracted_entities={},
-                    retrieval_metadata={"vector_results": 0, "graph_paths": 0},
+                    retrieval_metadata={
+                        "vector_results": 0,
+                        "chunk_results": 0,
+                        "graph_paths": 0,
+                        "seed_papers": [],
+                        "grounding_score": 0,
+                        "valid_citations": 0,
+                        "total_citations": 0,
+                    },
                 )
 
-            # Extract seed paper IDs
             seed_paper_ids = [r["paper_id"] for r in vector_results]
 
             # Step 3: Graph traversal from seed papers
             graph_result = await graph_traversal.traverse_from_papers(
-                seed_paper_ids=seed_paper_ids,
+                seed_paper_ids,
                 depth=request.depth,
                 max_nodes_per_hop=50,
             )
 
-            # Step 4: Also search chunks for more granular context
+            # Step 4: Vector search for chunks within seed papers
             chunk_results = await vector_search.search_chunks(
-                query_embedding=query_embedding,
+                query_embedding,
                 top_k=request.top_k * 2,
                 paper_ids=seed_paper_ids,
             )
@@ -87,7 +92,7 @@ async def query_graphrag(request: QueryRequest):
             context = RetrievalContext(
                 vector_chunks=chunk_results,
                 graph_paths=graph_result.get("paths", []),
-                extracted_entities=None,  # Could extract from seed papers
+                extracted_entities=None,
                 seed_papers=vector_results,
             )
             context_dict = context_builder.build(context)
@@ -171,7 +176,7 @@ async def query_stream(request: QueryRequest):
 
     async def generate():
         try:
-            async with get_neo4j_session() as session:
+            async for session in get_neo4j_session():
                 vector_search = VectorSearch(session)
                 graph_traversal = GraphTraversal(session)
                 context_builder = ContextBuilder(
@@ -206,10 +211,8 @@ async def query_stream(request: QueryRequest):
                 async for token in synthesizer.stream_synthesize(request.query, context_dict):
                     yield f"data: {token}\n\n"
 
-                yield "data: [DONE]\n\n"
-
         except Exception as e:
-            logger.error(f"Streaming query failed: {e}")
+            logger.error(f"Stream query failed: {e}")
             yield f"data: Error: {str(e)}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

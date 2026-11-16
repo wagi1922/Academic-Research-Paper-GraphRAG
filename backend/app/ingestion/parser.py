@@ -14,7 +14,10 @@ logger = logging.getLogger(__name__)
 class PDFParser:
     def __init__(self, grobid_url: str = "http://localhost:8070/api/processFulltextDocument"):
         self.grobid_url = grobid_url
-        self.client = httpx.AsyncClient(timeout=120.0)
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(180.0, connect=30.0),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
 
     async def parse_pdf_grobid(self, file_path: str) -> dict:
         """Parse PDF using Grobid, return structured TEI XML parsed to dict."""
@@ -64,53 +67,91 @@ class PDFParser:
             root = etree.fromstring(tei_xml.encode())
             ns = {"tei": "http://www.tei-c.org/ns/1.0"}
 
-            # Title
+            # Title - try multiple locations
+            title = ""
+            # 1. Try titleStmt/title (may be empty)
             title_elem = root.find(".//tei:titleStmt/tei:title", ns)
-            title = title_elem.text.strip() if title_elem is not None else ""
+            if title_elem is not None and title_elem.text:
+                title = title_elem.text.strip()
+            
+            # 2. Try analytic/title (main title from biblStruct)
+            if not title:
+                title_elem = root.find(".//tei:analytic/tei:title", ns)
+                if title_elem is not None and title_elem.text:
+                    title = title_elem.text.strip()
+            
+            # 3. Try monogr/title (journal/book title)
+            if not title:
+                title_elem = root.find(".//tei:monogr/tei:title", ns)
+                if title_elem is not None and title_elem.text:
+                    title = title_elem.text.strip()
 
             # Abstract
-            abstract_elem = root.find(".//tei:profileDesc/tei:abstract/tei:p", ns)
-            abstract = abstract_elem.text.strip() if abstract_elem is not None else ""
+            abstract_elem = root.find(".//tei:profileDesc/tei:abstract//tei:p", ns)
+            abstract = "".join(abstract_elem.itertext()).strip() if abstract_elem is not None else ""
 
-            # Authors
+            # Authors - from analytic/author (biblStruct authors)
             authors = []
-            for author_elem in root.findall(".//tei:author", ns):
+            for author_elem in root.findall(".//tei:analytic/tei:author", ns):
                 pers_name = author_elem.find(".//tei:persName", ns)
                 if pers_name is not None:
                     forename = pers_name.find("tei:forename", ns)
                     surname = pers_name.find("tei:surname", ns)
                     name_parts = []
                     if forename is not None:
-                        name_parts.append(forename.text)
-                    if surname is not None:
+                        # Collect all forenames (first, middle)
+                        for fn in pers_name.findall("tei:forename", ns):
+                            if fn.text:
+                                name_parts.append(fn.text)
+                    if surname is not None and surname.text:
                         name_parts.append(surname.text)
                     if name_parts:
                         authors.append(" ".join(name_parts))
-
-                affiliation = author_elem.find(".//tei:affiliation/tei:orgName", ns)
-                if affiliation is not None:
-                    # Could store affiliation separately
-                    pass
 
             # DOI
             doi_elem = root.find(".//tei:idno[@type='DOI']", ns)
             doi = doi_elem.text.strip() if doi_elem is not None else None
 
-            # Year
-            date_elem = root.find(".//tei:publicationStmt/tei:date", ns)
+            # Year - from publicationStmt/date or imprint/date
             year = None
-            if date_elem is not None and date_elem.get("when"):
-                try:
-                    year = int(date_elem.get("when")[:4])
-                except ValueError:
-                    pass
+            for date_elem in root.findall(".//tei:publicationStmt/tei:date", ns):
+                if date_elem.get("when"):
+                    try:
+                        year = int(date_elem.get("when")[:4])
+                        break
+                    except ValueError:
+                        pass
+            if year is None:
+                for date_elem in root.findall(".//tei:imprint/tei:date", ns):
+                    if date_elem.get("when"):
+                        try:
+                            year = int(date_elem.get("when")[:4])
+                            break
+                        except ValueError:
+                            pass
 
-            # Full text paragraphs
+            # Full text paragraphs - from text/body/div/p
             paragraphs = []
             for p in root.findall(".//tei:body//tei:p", ns):
                 text = "".join(p.itertext()).strip()
                 if text:
                     paragraphs.append(text)
+
+            # Sections - from text/body/div with head
+            sections = []
+            for div in root.findall(".//tei:body/tei:div", ns):
+                head_elem = div.find("tei:head", ns)
+                head_text = "".join(head_elem.itertext()).strip() if head_elem is not None else ""
+                div_paragraphs = []
+                for p in div.findall(".//tei:p", ns):
+                    text = "".join(p.itertext()).strip()
+                    if text:
+                        div_paragraphs.append(text)
+                if div_paragraphs:
+                    sections.append({
+                        "heading": head_text,
+                        "text": "\n\n".join(div_paragraphs)
+                    })
 
             return {
                 "title": title,
@@ -120,6 +161,7 @@ class PDFParser:
                 "year": year,
                 "paragraphs": paragraphs,
                 "full_text": "\n\n".join(paragraphs),
+                "sections": sections,
                 "raw_tei": tei_xml,
             }
         except Exception as e:

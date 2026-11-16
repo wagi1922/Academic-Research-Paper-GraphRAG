@@ -1,7 +1,7 @@
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -13,8 +13,8 @@ class Settings(BaseSettings):
 
     # LLM / Embedding (OpenRouter via 9router)
     openrouter_api_key: Optional[str] = Field(default=None, alias="OPENROUTER_API_KEY")
-    llm_model: str = Field(default="openrouter/gpt-4o-mini", alias="LLM_MODEL")
-    embedding_model: str = Field(default="openrouter/nomic-embed-text", alias="EMBEDDING_MODEL")
+    llm_model: str = Field(default="google/gemini-flash-1.5", alias="LLM_MODEL")
+    embedding_model: str = Field(default="nomic-ai/nomic-embed-text-v1.5", alias="EMBEDDING_MODEL")
 
     # Ollama (local fallback)
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
@@ -35,8 +35,14 @@ class Settings(BaseSettings):
     default_top_k: int = 5
     default_depth: int = 2
 
-    # CORS
-    cors_origins: list[str] = Field(default=["*"], alias="CORS_ORIGINS")
+    # CORS - store as string, parse to list via property
+    cors_origins_raw: str = Field(default="*", alias="CORS_ORIGINS")
+
+    @property
+    def cors_origins(self) -> List[str]:
+        if self.cors_origins_raw == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"
