@@ -1,5 +1,6 @@
 # Experiment E3: Retrieval Parameters (top-k, depth)
 # Find optimal top-k and graph traversal depth for GraphRAG
+# OpenRouter FREE models only — NO PAID, NO LOCAL
 
 experiment:
   name: "E3_Retrieval_Params"
@@ -37,8 +38,8 @@ retrieval_params:
 # Fixed settings for fair comparison
 fixed_config:
   chunking_strategy: "fixed_512_50"
-  embedding_model: "openrouter/nomic-embed-text"
-  llm_model: "openrouter/gpt-4o-mini"
+  embedding_model: "nomic-embed-text-v1.5:free"
+  llm_model: "inclusionai/ling-3.2-flash:free"
   vector_weight: 0.7
   keyword_weight: 0.3
 
@@ -56,7 +57,7 @@ evaluation:
     - "graph_nodes_retrieved_avg"
     - "graph_edges_retrieved_avg"
 
-  test_queries: 30
+  test_queries: 33
   test_papers: 20
 
   gold_standard_path: "experiments/data/gold_queries.jsonl"

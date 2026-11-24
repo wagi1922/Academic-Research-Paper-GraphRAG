@@ -27,13 +27,14 @@ class AnswerSynthesizer:
         base_url: str = None,
         model: str = None,
     ):
+        # OpenRouter direct API - use actual API key
         self.api_key = api_key or settings.openrouter_api_key
         self.base_url = base_url or "https://openrouter.ai/api/v1"
         self.model = model or settings.llm_model
 
         if self.api_key:
             self.client = instructor.from_openai(
-                AsyncOpenAI(api_key=self.api_key, base_url=self.base_url),
+                AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=120.0),
                 mode=instructor.Mode.JSON,
             )
         else:
@@ -92,34 +93,49 @@ class AnswerSynthesizer:
         """Validate that cited sources exist in retrieved context."""
         # Extract paper IDs from vector chunks and graph paths
         valid_paper_ids = set()
+        # Map numbered citation index -> paper_id
+        citation_index_to_id = {}
 
         # From vector chunks
-        for chunk in context.get("vector_chunks", "").split("\n\n---\n\n"):
-            if "Paper:" in chunk:
-                # Parse paper ID from format: [Chunk X | Paper: Title (paper_id) | Score: ...]
+        for idx, chunk in enumerate(context.get("vector_chunks", "").split("\n\n---\n\n")):
+            if "Paper ID:" in chunk:
                 import re
-                match = re.search(r'\(([^)]+)\)', chunk)
+                match = re.search(r'Paper ID:\s*([^|]+)', chunk)
                 if match:
-                    valid_paper_ids.add(match.group(1))
+                    paper_id = match.group(1).strip()
+                    valid_paper_ids.add(paper_id)
+                    citation_index_to_id[idx + 1] = paper_id  # 1-indexed
 
         # From seed papers
-        for line in context.get("seed_papers", "").split("\n"):
-            if "(" in line and ")" in line:
+        for idx, line in enumerate(context.get("seed_papers", "").split("\n")):
+            if "[ID:" in line:
                 import re
-                match = re.search(r'\(([^)]+)\)', line)
+                match = re.search(r'\[ID:\s*([^\]]+)\]', line)
                 if match:
-                    valid_paper_ids.add(match.group(1))
+                    paper_id = match.group(1).strip()
+                    valid_paper_ids.add(paper_id)
+                    citation_index_to_id[idx + 1] = paper_id
 
         # From graph paths
         for path in context.get("graph_paths", "").split("\n\n---\n\n"):
             import re
             ids = re.findall(r'\(([^)]+)\)', path)
-            valid_paper_ids.update(ids)
+            for pid in ids:
+                valid_paper_ids.add(pid)
 
         # Filter sources to only valid ones
         validated_sources = []
         for src in response.sources:
-            if src.paper_id in valid_paper_ids or not valid_paper_ids:
+            # Check if paper_id is a numbered citation (e.g., "1", "2", "9")
+            if src.paper_id.isdigit():
+                idx = int(src.paper_id)
+                mapped_id = citation_index_to_id.get(idx)
+                if mapped_id:
+                    src.paper_id = mapped_id
+                    validated_sources.append(src)
+                else:
+                    logger.warning(f"Citation validation failed for numbered citation: [{src.paper_id}]")
+            elif src.paper_id in valid_paper_ids or not valid_paper_ids:
                 validated_sources.append(src)
             else:
                 logger.warning(f"Citation validation failed for paper_id: {src.paper_id}")
@@ -132,12 +148,13 @@ class StreamingSynthesizer:
     """Streaming version for SSE responses."""
 
     def __init__(self, api_key: str = None, base_url: str = None, model: str = None):
+        # OpenRouter direct API - use actual API key
         self.api_key = api_key or settings.openrouter_api_key
         self.base_url = base_url or "https://openrouter.ai/api/v1"
         self.model = model or settings.llm_model
 
         if self.api_key:
-            self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
+            self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=120.0)
         else:
             self.client = None
 
@@ -187,16 +204,43 @@ async def validate_answer_grounding(
     # This would use a separate LLM call to check grounding
     # Simplified version: check citation format
     import re
-    citations = re.findall(r'\[([A-Za-z0-9_\-]+)\]', answer)
+    # Match both numbered [1] and paper_id [DOI/UUID/title] citations (allow spaces in paper_id)
+    citations = re.findall(r'\[([^\]]+)\]', answer)
 
-    # Extract valid paper IDs from context
+    # Extract valid paper IDs from context + map numbered citations
     valid_ids = set()
-    for chunk in context.get("vector_chunks", "").split("\n\n---\n\n"):
-        match = re.search(r'\(([^)]+)\)', chunk)
-        if match:
-            valid_ids.add(match.group(1))
+    citation_index_to_id = {}
 
-    unsupported = [c for c in citations if c not in valid_ids]
+    for idx, chunk in enumerate(context.get("vector_chunks", "").split("\n\n---\n\n")):
+        if "Paper ID:" in chunk:
+            match = re.search(r'Paper ID:\s*([^|]+)', chunk)
+            if match:
+                paper_id = match.group(1).strip()
+                valid_ids.add(paper_id)
+                citation_index_to_id[idx + 1] = paper_id
+
+    for idx, line in enumerate(context.get("seed_papers", "").split("\n")):
+        if "[ID:" in line:
+            match = re.search(r'\[ID:\s*([^\]]+)\]', line)
+            if match:
+                paper_id = match.group(1).strip()
+                valid_ids.add(paper_id)
+                citation_index_to_id[idx + 1] = paper_id
+
+    for path in context.get("graph_paths", "").split("\n\n---\n\n"):
+        ids = re.findall(r'\(([^)]+)\)', path)
+        for pid in ids:
+            valid_ids.add(pid)
+
+    unsupported = []
+    for c in citations:
+        c_stripped = c.strip()
+        if c_stripped.isdigit():
+            idx = int(c_stripped)
+            if idx not in citation_index_to_id:
+                unsupported.append(c_stripped)
+        elif c_stripped not in valid_ids:
+            unsupported.append(c_stripped)
 
     return {
         "total_citations": len(citations),

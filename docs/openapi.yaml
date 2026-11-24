@@ -1,0 +1,827 @@
+openapi: 3.1.0
+info:
+  title: Academic & Research Paper GraphRAG API
+  description: |
+    GraphRAG system for academic paper ingestion, query, and visualization.
+    Supports PDF upload, knowledge graph construction, natural language querying with citations, and graph visualization.
+  version: 0.1.0
+  contact:
+    name: Capstone Team - Teknik Informatika UIR
+  license:
+    name: Academic Use Only
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.graphrag.example.com/api/v1
+    description: Production server (placeholder)
+tags:
+  - name: root
+    description: API information endpoints
+  - name: health
+    description: Health check endpoints
+  - name: ingestion
+    description: Paper ingestion pipeline (PDF upload, parsing, entity extraction, graph injection)
+  - name: query
+    description: GraphRAG natural language query with retrieval and synthesis
+  - name: graph
+    description: Knowledge graph visualization and exploration endpoints
+
+paths:
+  /:
+    get:
+      tags: [root]
+      summary: API root information
+      responses:
+        '200':
+          description: API info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootResponse'
+
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      description: Returns service status and Neo4j connectivity
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Degraded (Neo4j unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /papers/ingest:
+    post:
+      tags: [ingestion]
+      summary: Ingest a single PDF paper
+      description: |
+        Upload a PDF and start async ingestion pipeline: Grobid parse → chunk → entity extraction → Neo4j graph injection → vector indexing.
+        Returns job ID immediately; poll `/papers/ingest/status/{job_id}` for progress.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file (max 50MB)
+                title:
+                  type: string
+                  description: Paper title
+                year:
+                  type: integer
+                  description: Publication year
+                doi:
+                  type: string
+                  description: DOI identifier
+                venue:
+                  type: string
+                  description: Conference/journal venue
+                keywords:
+                  type: string
+                  description: Comma-separated keywords
+                chunking_strategy:
+                  type: string
+                  enum: [fixed_512_50, fixed_1024_100, semantic_nomic, proposition_gpt4o_mini]
+                  default: fixed_512_50
+                  description: Chunking strategy for text segmentation
+      responses:
+        '202':
+          description: Ingestion job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
+        '400':
+          description: Invalid request (non-PDF file)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /papers/ingest/status/{job_id}:
+    get:
+      tags: [ingestion]
+      summary: Get ingestion job status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID returned from ingest endpoint
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestJobStatus'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /papers/ingest/batch:
+    post:
+      tags: [ingestion]
+      summary: Ingest multiple PDF papers
+      description: Batch upload up to 20 PDFs with optional per-file metadata
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 20
+                  description: PDF files
+                titles:
+                  type: array
+                  items:
+                    type: string
+                  description: Titles (optional, matched by index)
+                years:
+                  type: array
+                  items:
+                    type: integer
+                dois:
+                  type: array
+                  items:
+                    type: string
+                venues:
+                  type: array
+                  items:
+                    type: string
+                chunking_strategy:
+                  type: string
+                  enum: [fixed_512_50, fixed_1024_100, semantic_nomic, proposition_gpt4o_mini]
+                  default: fixed_512_50
+      responses:
+        '202':
+          description: Batch job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [processing]
+                  total_files:
+                    type: integer
+        '400':
+          description: Too many files or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /query/:
+    post:
+      tags: [query]
+      summary: GraphRAG natural language query
+      description: |
+        Main query endpoint. Pipeline: embed query → vector search (top-k papers) → graph traversal (depth hops) → chunk retrieval → context assembly → LLM synthesis with citations → citation validation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query response with answer, sources, and graph paths
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponseExtended'
+        '400':
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Query processing failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /query/stream:
+    post:
+      tags: [query]
+      summary: GraphRAG query with SSE streaming
+      description: |
+        Same as `/query/` but returns Server-Sent Events stream for progressive answer generation.
+        Each event `data: <token>`; final event `data: [DONE]`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /query/suggestions:
+    get:
+      tags: [query]
+      summary: Get query autocomplete suggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Partial query string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 20
+      responses:
+        '200':
+          description: Suggestion list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+
+  /graph/visualize:
+    get:
+      tags: [graph]
+      summary: Get subgraph for visualization
+      description: |
+        Returns Cytoscape.js/React Flow compatible nodes and edges.
+        Provide either `paper_id` (paper-centric traversal) or `node_id` (node-centric neighborhood).
+      parameters:
+        - name: paper_id
+          in: query
+          schema:
+            type: string
+          description: Seed paper ID for multi-hop traversal
+        - name: node_id
+          in: query
+          schema:
+            type: string
+          description: Specific node ID for neighborhood
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 2
+            minimum: 1
+            maximum: 4
+          description: Traversal depth
+        - name: max_nodes
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 10
+            maximum: 500
+          description: Maximum nodes to return
+        - name: relation_types
+          in: query
+          schema:
+            type: string
+          description: Comma-separated relation types (e.g., CITES,USES_METHOD)
+      responses:
+        '200':
+          description: Graph visualization data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphVisualizationResponse'
+        '400':
+          description: Missing paper_id or node_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Visualization failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /graph/paper/{paper_id}/subgraph:
+    get:
+      tags: [graph]
+      summary: Get paper-centered subgraph with citation network
+      parameters:
+        - name: paper_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 2
+            minimum: 1
+            maximum: 3
+        - name: max_nodes
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 10
+            maximum: 200
+      responses:
+        '200':
+          description: Paper subgraph with citation paths
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaperSubgraphResponse'
+        '404':
+          description: Paper not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /graph/concept/{concept_name}/papers:
+    get:
+      tags: [graph]
+      summary: Get papers addressing a specific concept
+      parameters:
+        - name: concept_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Papers for concept
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConceptPapersResponse'
+        '500':
+          description: Query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /graph/method/{method_name}/papers:
+    get:
+      tags: [graph]
+      summary: Get papers using a specific method
+      parameters:
+        - name: method_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Papers for method
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MethodPapersResponse'
+        '500':
+          description: Query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /graph/dataset/{dataset_name}/papers:
+    get:
+      tags: [graph]
+      summary: Get papers using a specific dataset
+      parameters:
+        - name: dataset_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Papers for dataset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetPapersResponse'
+        '500':
+          description: Query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /graph/stats:
+    get:
+      tags: [graph]
+      summary: Get overall graph statistics
+      responses:
+        '200':
+          description: Graph node/edge counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphStatsResponse'
+        '500':
+          description: Stats query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RootResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Academic & Research Paper GraphRAG"
+        version:
+          type: string
+          example: "0.1.0"
+        description:
+          type: string
+          example: "GraphRAG system for academic paper knowledge graph"
+        docs:
+          type: string
+          example: "/docs"
+        health:
+          type: string
+          example: "/health"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+          example: "healthy"
+        neo4j:
+          type: string
+          example: "connected"
+        version:
+          type: string
+          example: "0.1.0"
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Error description"
+        error:
+          type: string
+          example: "Exception details"
+
+    IngestResponse:
+      type: object
+      properties:
+        paper_id:
+          type: string
+          example: "abc12345"
+        title:
+          type: string
+          example: "Attention Is All You Need"
+        status:
+          type: string
+          enum: [processing, completed, failed]
+          example: "processing"
+        message:
+          type: string
+          example: "Ingestion started. Check /papers/ingest/status/{job_id} for progress."
+        chunks_indexed:
+          type: integer
+          example: 0
+        entities_extracted:
+          type: object
+          example: {}
+
+    IngestJobStatus:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        message:
+          type: string
+        result:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+
+    QueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 3
+          maxLength: 2000
+          description: Natural language question
+          example: "Apa metode yang digunakan dalam paper Attention Is All You Need?"
+        top_k:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+          description: Number of seed papers from vector search
+        depth:
+          type: integer
+          default: 2
+          minimum: 1
+          maximum: 3
+          description: Graph traversal hops
+        include_chunks:
+          type: boolean
+          default: true
+          description: Include vector chunks in context
+        stream:
+          type: boolean
+          default: false
+          description: Stream response via SSE
+        retrieval_only:
+          type: boolean
+          default: false
+          description: Skip LLM synthesis, return retrieval results only
+
+    SourceCitation:
+      type: object
+      properties:
+        paper_id:
+          type: string
+        title:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        authors:
+          type: array
+          items:
+            type: string
+        relevance_score:
+          type: number
+          nullable: true
+        citation_text:
+          type: string
+          nullable: true
+
+    GraphPathElement:
+      type: object
+      properties:
+        source:
+          type: string
+        relation:
+          type: string
+        target:
+          type: string
+        source_type:
+          type: string
+        target_type:
+          type: string
+
+    RetrievalMetadata:
+      type: object
+      properties:
+        vector_results:
+          type: integer
+        chunk_results:
+          type: integer
+        graph_paths:
+          type: integer
+        seed_papers:
+          type: array
+          items:
+            type: string
+        grounding_score:
+          type: number
+        valid_citations:
+          type: integer
+        total_citations:
+          type: integer
+        latency_ms:
+          type: integer
+
+    QueryResponseExtended:
+      type: object
+      properties:
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCitation'
+        graph_path:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphPathElement'
+        extracted_entities:
+          type: object
+        retrieval_metadata:
+          $ref: '#/components/schemas/RetrievalMetadata'
+
+    VisualizeNode:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+        properties:
+          type: object
+        classes:
+          type: string
+
+    VisualizeEdge:
+      type: object
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        target:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+        properties:
+          type: object
+
+    GraphVisualizationResponse:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeEdge'
+        metadata:
+          type: object
+
+    PaperSubgraphResponse:
+      type: object
+      properties:
+        paper:
+          $ref: '#/components/schemas/VisualizeNode'
+          nullable: true
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeEdge'
+        paths:
+          type: array
+          items:
+            type: object
+        metadata:
+          type: object
+
+    ConceptPapersResponse:
+      type: object
+      properties:
+        concept:
+          type: string
+        papers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeNode'
+        count:
+          type: integer
+
+    MethodPapersResponse:
+      type: object
+      properties:
+        method:
+          type: string
+        papers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeNode'
+        count:
+          type: integer
+
+    DatasetPapersResponse:
+      type: object
+      properties:
+        dataset:
+          type: string
+        papers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisualizeNode'
+        count:
+          type: integer
+
+    GraphStatsResponse:
+      type: object
+      properties:
+        papers:
+          type: integer
+        authors:
+          type: integer
+        concepts:
+          type: integer
+        methods:
+          type: integer
+        datasets:
+          type: integer
+        relations:
+          type: integer

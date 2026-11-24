@@ -4,10 +4,9 @@ Uses LLM with Instructor for structured output extraction.
 """
 
 import logging
-import instructor
 from openai import AsyncOpenAI
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from app.schemas.entities import (
     ExtractedEntities,
@@ -50,6 +49,22 @@ EXTRACTION RULES:
 - Paper entity is implicit (the current paper being processed)
 - Return empty lists if no entities of a type found
 
+RELATION SCHEMA (REQUIRED FIELDS - MUST INCLUDE ALL):
+{
+  "source_type": "Paper",          // Paper | Author | Concept | Method | Dataset
+  "source_name": "current paper",  // exact entity name extracted
+  "relation": "USES_METHOD",       // WROTE | CITES | ADDRESSES_TOPIC | USES_METHOD | USES_DATASET
+  "target_type": "Method",         // Paper | Author | Concept | Method | Dataset  ← REQUIRED
+  "target_name": "Transformer"     // exact entity name extracted
+}
+
+VALID RELATION EXAMPLES:
+- Paper -> Concept:   {"source_type":"Paper","source_name":"current paper","relation":"ADDRESSES_TOPIC","target_type":"Concept","target_name":"Attention Mechanism"}
+- Paper -> Method:    {"source_type":"Paper","source_name":"current paper","relation":"USES_METHOD","target_type":"Method","target_name":"BERT"}
+- Paper -> Dataset:   {"source_type":"Paper","source_name":"current paper","relation":"USES_DATASET","target_type":"Dataset","target_name":"SQuAD"}
+- Author -> Paper:    {"source_type":"Author","source_name":"Vaswani et al.","relation":"WROTE","target_type":"Paper","target_name":"current paper"}
+- Paper -> Paper:     {"source_type":"Paper","source_name":"current paper","relation":"CITES","target_type":"Paper","target_name":"Attention Is All You Need"}
+
 TEXT TO ANALYZE:
 {text}
 
@@ -61,61 +76,110 @@ class EntityExtractor:
         self,
         api_key: str,
         base_url: str = "https://openrouter.ai/api/v1",
-        model: str = "openrouter/gpt-4o-mini",
+        model: str = "inclusionai/ling-3.2-flash:free",
         max_retries: int = 2,
+        timeout: float = 120.0,
     ):
-        self.client = instructor.from_openai(
-            AsyncOpenAI(api_key=api_key, base_url=base_url),
-            mode=instructor.Mode.JSON,
-        )
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
         self.model = model
         self.max_retries = max_retries
 
     async def extract(self, text: str, paper_title: str = "") -> ExtractedEntities:
         """Extract entities and relations from text."""
+        logger.error(f"[EXTRACT] Called with text length: {len(text)}")
         if not text.strip():
+            logger.error("[EXTRACT] Empty text, returning empty")
             return ExtractedEntities()
+        logger.error("[EXTRACT] Text not empty, proceeding")
 
         # Limit text length for token efficiency
         max_chars = 12000
         analysis_text = text[:max_chars]
         if len(text) > max_chars:
             analysis_text += f"\n\n[TRUNCATED - original length: {len(text)} chars]"
+        logger.error("[EXTRACT] Text truncated, creating prompt")
 
-        prompt = EXTRACTION_PROMPT.format(text=analysis_text)
+        prompt = EXTRACTION_PROMPT.replace("{text}", analysis_text)
+        logger.error(f"[EXTRACT] Prompt length: {len(prompt)}")
+        logger.error(f"[EXTRACT] Prompt preview: {prompt[:500]}")
 
         for attempt in range(self.max_retries + 1):
             try:
-                result = await self.client.chat.completions.create(
+                logger.error(f"[EXTRACT] Attempt {attempt + 1}/{self.max_retries + 1} calling LLM, model={self.model}")
+                response = await self.client.chat.completions.create(
                     model=self.model,
                     messages=[
-                        {"role": "system", "content": "You are an academic information extraction expert."},
+                        {"role": "system", "content": "You are an academic information extraction expert. Output ONLY valid JSON matching the schema. No reasoning, no markdown, no extra text."},
                         {"role": "user", "content": prompt},
                     ],
-                    response_model=ExtractedEntities,
                     temperature=0,
-                    max_retries=0,  # We handle retries manually
                 )
-                logger.info(f"Extracted: {len(result.authors)} authors, {len(result.concepts)} concepts, "
-                           f"{len(result.methods)} methods, {len(result.datasets)} datasets, "
-                           f"{len(result.relations)} relations")
-                return result
+                content = response.choices[0].message.content
+                logger.error(f"[EXTRACT] Raw response (first 1000 chars): {content[:1000]}")
+                
+                # Parse JSON manually
+                import json
+                try:
+                    data = json.loads(content)
+                    result = ExtractedEntities(**data)
+                    # CITES is only valid as Paper->Paper; drop placeholder/self citations
+                    result.relations = [
+                        r for r in result.relations
+                        if not (
+                            r.relation == RelationType.CITES
+                            and (
+                                r.source_type != EntityType.PAPER
+                                or r.target_type != EntityType.PAPER
+                                or r.target_name.strip().lower() in ("current paper", paper_title.strip().lower())
+                            )
+                        )
+                    ]
+                    logger.info(f"Extracted: {len(result.authors)} authors, {len(result.concepts)} concepts, "
+                               f"{len(result.methods)} methods, {len(result.datasets)} datasets, "
+                               f"{len(result.relations)} relations")
+                    return result
+                except json.JSONDecodeError as je:
+                    logger.warning(f"JSON parse error: {je}")
+                    if attempt == self.max_retries:
+                        logger.error(f"All extraction attempts failed, returning empty entities")
+                        return ExtractedEntities()
+                except ValidationError as ve:
+                    logger.warning(f"Validation error: {ve}")
+                    if attempt == self.max_retries:
+                        logger.error(f"All extraction attempts failed, returning empty entities")
+                        return ExtractedEntities()
 
             except Exception as e:
-                logger.warning(f"Extraction attempt {attempt + 1} failed: {e}")
+                logger.warning(f"Extraction attempt {attempt + 1} failed: {type(e).__name__}: {e}")
                 if attempt == self.max_retries:
-                    logger.error(f"All extraction attempts failed, returning empty")
+                    logger.error(f"All extraction attempts failed, returning empty entities")
                     return ExtractedEntities()
 
         return ExtractedEntities()
 
     async def extract_from_chunks(self, chunks: list[str], paper_title: str = "") -> ExtractedEntities:
-        """Extract from multiple chunks and merge results."""
-        all_entities = ExtractedEntities()
+        """Extract from multiple chunks and merge results.
 
-        for i, chunk in enumerate(chunks):
-            logger.debug(f"Extracting from chunk {i+1}/{len(chunks)}")
-            entities = await self.extract(chunk, paper_title)
+        Budget optimization: chunks are grouped into ~10k-char windows and each
+        window costs ONE LLM call (extract() truncates at 12k chars anyway).
+        Per-chunk calls would burn ~195 calls on a single GraphRAG paper.
+        """
+        windows: list[str] = []
+        cur: list[str] = []
+        n = 0
+        for chunk in chunks:
+            if n + len(chunk) > 10000 and cur:
+                windows.append("\n\n".join(cur))
+                cur, n = [], 0
+            cur.append(chunk)
+            n += len(chunk)
+        if cur:
+            windows.append("\n\n".join(cur))
+
+        all_entities = ExtractedEntities()
+        for i, window in enumerate(windows):
+            logger.debug(f"Extracting window {i+1}/{len(windows)}")
+            entities = await self.extract(window, paper_title)
             all_entities.authors.extend(entities.authors)
             all_entities.concepts.extend(entities.concepts)
             all_entities.methods.extend(entities.methods)
@@ -156,7 +220,7 @@ class EntityExtractor:
 class SimpleEntityExtractor:
     """Fallback extractor using basic LLM call without structured output."""
 
-    def __init__(self, llm_client, model: str = "gpt-4o-mini"):
+    def __init__(self, llm_client, model: str = "inclusionai/ling-3.2-flash:free"):
         self.llm_client = llm_client
         self.model = model
 

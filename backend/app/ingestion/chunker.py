@@ -1,6 +1,7 @@
 """
 Text Chunking Module
 Supports multiple chunking strategies: fixed-size, semantic, and proposition-based.
+OpenRouter FREE models only — NO PAID, NO LOCAL.
 """
 
 import logging
@@ -123,7 +124,7 @@ Propositions (JSON array):"""
 
         try:
             response = await self.llm_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="inclusionai/ling-3.2-flash:free",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
                 response_format={"type": "json_object"},
@@ -186,6 +187,13 @@ def get_chunker(
 CHUNKING_STRATEGIES = {
     "fixed_512_50": lambda: FixedSizeChunker(512, 50),
     "fixed_1024_100": lambda: FixedSizeChunker(1024, 100),
-    "semantic_bert": lambda emb: SemanticChunkerWrapper(embeddings=emb),
-    "proposition_llm": lambda llm: PropositionChunker(llm_client=llm),
+    "semantic_nomic_free": lambda: SemanticChunkerWrapper(
+        embeddings=None  # Will be set at runtime with OpenRouter embeddings
+    ),
+    "semantic_ling_free": lambda: SemanticChunkerWrapper(
+        embeddings=None  # Will be set at runtime with OpenRouter embeddings
+    ),
+    "proposition_ling_free": lambda: PropositionChunker(
+        llm_client=None  # Will be set at runtime
+    ),
 }

@@ -190,7 +190,7 @@ class GraphWriter:
     # Relations (Cross-paper, etc.)
     # ============================================================
 
-    async def create_relations(self, relations: list[RelationEntity]) -> int:
+    async def create_relations(self, relations: list[RelationEntity], paper_id: str | None = None) -> int:
         if not relations:
             return 0
 
@@ -201,10 +201,37 @@ class GraphWriter:
             if not type_relations:
                 continue
 
+            if rel_type == RelationType.CITES:
+                # CITES: source is the current paper (extractor emits "current paper"
+                # placeholder); target matched by exact title among corpus Papers.
+                # Paper nodes have `title`, not `name` — the generic name-based MATCH
+                # below could never create Paper->Paper edges.
+                query = """
+                UNWIND $rels AS rel
+                MATCH (source:Paper {id: $paper_id})
+                MATCH (target:Paper {title: rel.target_name})
+                WHERE target.id <> $paper_id
+                MERGE (source)-[:CITES]->(target)
+                RETURN count(*) as created
+                """
+                rel_data = [{"target_name": r.target_name.strip()} for r in type_relations]
+                try:
+                    result = await self.session.run(query, rels=rel_data, paper_id=paper_id)
+                    record = await result.single()
+                    created += record["created"] if record else 0
+                except Exception as e:
+                    logger.warning(f"Failed to create CITES relations: {e}")
+                continue
+
+            # Use source_type and target_type from the first relation (all same type)
+            sample_rel = type_relations[0]
+            source_label = sample_rel.source_type.value
+            target_label = sample_rel.target_type.value
+
             query = f"""
             UNWIND $rels AS rel
-            MATCH (source:{rel_type.source_type.value} {{name: rel.source_name}})
-            MATCH (target:{rel_type.target_type.value} {{name: rel.target_name}})
+            MATCH (source:{source_label} {{name: rel.source_name}})
+            MATCH (target:{target_label} {{name: rel.target_name}})
             MERGE (source)-[:{rel_type.value}]->(target)
             RETURN count(*) as created
             """
@@ -291,7 +318,7 @@ class GraphWriter:
         stats["datasets_created"] = await self.create_datasets(entities.datasets, paper.id)
 
         # Create cross-paper relations
-        stats["relations_created"] = await self.create_relations(entities.relations)
+        stats["relations_created"] = await self.create_relations(entities.relations, paper.id)
 
         # Create chunks
         if chunks:

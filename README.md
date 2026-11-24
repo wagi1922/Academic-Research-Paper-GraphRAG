@@ -18,7 +18,7 @@ Sistem RAG tingkat lanjut dengan Knowledge Graph untuk literasi ilmiah cross-dom
 | **Citation-Grounded Answers** | Setiap klaim disertai sitasi [Paper ID] |
 | **Graph Visualization** | React Flow / D3.js untuk eksplorasi subgraph |
 | **Experiment Framework** | E1–E4: Chunking, Embedding, Retrieval, Ablation |
-| **Fallback Local LLM** | Ollama (nomic-embed-text, Llama-3.1-8B) saat quota habis |
+| **Free OpenRouter Only** | LLM & Embedding via OpenRouter free tier (`inclusionai/ling-3.2-flash:free`, `nomic-embed-text-v1.5:free`) |
 
 ---
 

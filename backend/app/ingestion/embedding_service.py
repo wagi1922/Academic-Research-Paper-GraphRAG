@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Embedding Service for GraphRAG.
-Generates embeddings using OpenRouter API (nomic-embed-text).
 """
-import asyncio
+Embedding Service for GraphRAG — LOCAL MiniLM (all-MiniLM-L6-v2, 384-d).
+
+Backed by the host-side guard-embedding.service (stdlib http.server, OpenAI-compatible
+/v1/embeddings endpoint on 127.0.0.1:8788). The backend container uses
+network_mode: host, so localhost:8788 reaches the host service.
+
+Why local: OpenRouter has NO free embedding model (nomic-embed-text-v1.5:free etc.
+return 400 "does not exist"), and the free-tier daily LLM budget must be reserved
+for entity extraction and answer synthesis. MiniLM is deterministic and free.
+"""
 import logging
-from typing import Optional
-from openai import AsyncOpenAI
+from typing import List
+
+import httpx
 
 from app.core.config import settings
 
@@ -13,65 +21,36 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """Generates text embeddings via OpenRouter API."""
+    """Generates text embeddings via the local MiniLM service (OpenAI-compatible API)."""
 
-    def __init__(
-        self,
-        api_key: str = None,
-        base_url: str = None,
-        model: str = None,
-    ):
-        self.api_key = api_key or settings.openrouter_api_key
-        self.base_url = base_url or "https://openrouter.ai/api/v1"
+    def __init__(self, base_url: str | None = None, model: str | None = None):
+        self.api_key = "local"  # kept for compatibility with OpenAIEmbeddings wrapper
+        self.base_url = (base_url or settings.embedding_url).rstrip("/") + "/v1"
         self.model = model or settings.embedding_model
+        self._client = httpx.AsyncClient(timeout=120.0)
 
-        if self.api_key:
-            self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
-        else:
-            self.client = None
-            logger.warning("No API key provided for EmbeddingService")
-
-    async def embed_text(self, text: str) -> list[float]:
+    async def embed_text(self, text: str) -> List[float]:
         """Generate embedding for a single text."""
-        if not self.client:
-            raise ValueError("EmbeddingService not configured: missing API key")
+        return (await self.embed_batch([text]))[0]
 
-        # Truncate to model max tokens (nomic-embed-text: 8192 tokens ~ 32k chars)
-        max_chars = 30000
-        if len(text) > max_chars:
-            text = text[:max_chars]
-
-        response = await self.client.embeddings.create(
-            model=self.model,
-            input=text,
-        )
-        return response.data[0].embedding
-
-    async def embed_batch(self, texts: list[str], batch_size: int = 10) -> list[list[float]]:
+    async def embed_batch(self, texts: List[str], batch_size: int = 64) -> List[List[float]]:
         """Generate embeddings for multiple texts in batches."""
-        if not self.client:
-            raise ValueError("EmbeddingService not configured: missing API key")
-
         embeddings = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            # Truncate each text
-            max_chars = 30000
-            batch = [t[:max_chars] if len(t) > max_chars else t for t in batch]
-
-            response = await self.client.embeddings.create(
-                model=self.model,
-                input=batch,
+            resp = await self._client.post(
+                f"{self.base_url}/embeddings",
+                json={"input": batch, "model": self.model},
             )
-            batch_embeddings = [d.embedding for d in response.data]
-            embeddings.extend(batch_embeddings)
+            resp.raise_for_status()
+            data = resp.json()["data"]
+            embeddings.extend(
+                [d["embedding"] for d in sorted(data, key=lambda x: x["index"])]
+            )
             logger.debug(f"Embedded batch {i//batch_size + 1}: {len(batch)} texts")
-
         return embeddings
 
 
-async def get_embedding_service() -> Optional[EmbeddingService]:
-    """Factory function to get embedding service if configured."""
-    if settings.openrouter_api_key:
-        return EmbeddingService()
-    return None
+async def get_embedding_service() -> EmbeddingService:
+    """Factory function (no API key required for local service)."""
+    return EmbeddingService()

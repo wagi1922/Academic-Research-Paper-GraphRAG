@@ -15,7 +15,7 @@ class PDFParser:
     def __init__(self, grobid_url: str = "http://localhost:8070/api/processFulltextDocument"):
         self.grobid_url = grobid_url
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(180.0, connect=30.0),
+            timeout=httpx.Timeout(1800.0, connect=30.0, read=1800.0, write=60.0, pool=60.0),
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
         )
 
@@ -25,8 +25,8 @@ class PDFParser:
             with open(file_path, "rb") as f:
                 files = {"input": (Path(file_path).name, f, "application/pdf")}
                 data = {
-                    "consolidateHeader": "1",
-                    "consolidateCitations": "1",
+                    "consolidateHeader": "0",
+                    "consolidateCitations": "0",
                     "includeRawCitations": "1",
                     "includeRawAffiliations": "1",
                     "teiCoordinates": "0",
@@ -43,8 +43,8 @@ class PDFParser:
         try:
             files = {"input": (filename, pdf_bytes, "application/pdf")}
             data = {
-                "consolidateHeader": "1",
-                "consolidateCitations": "1",
+                "consolidateHeader": "0",
+                "consolidateCitations": "0",
                 "includeRawCitations": "1",
                 "includeRawAffiliations": "1",
             }
@@ -204,6 +204,97 @@ class PDFParser:
             "full_text": "",
             "raw_tei": tei_xml,
         }
+
+    def _extract_references(self, tei_xml: str) -> list[dict]:
+        """Extract references from Grobid TEI XML listBibl section."""
+        try:
+            from lxml import etree
+        except ImportError:
+            logger.warning("lxml not installed, cannot extract references")
+            return []
+
+        try:
+            root = etree.fromstring(tei_xml.encode())
+            ns = {"tei": "http://www.tei-c.org/ns/1.0"}
+
+            references = []
+
+            # Find all biblStruct in listBibl
+            for bibl in root.findall(".//tei:listBibl/tei:biblStruct", ns):
+                ref = {}
+
+                # Get xml:id
+                xml_id = bibl.get("{http://www.w3.org/XML/1998/namespace}id") or bibl.get("id")
+                if xml_id:
+                    ref["xml_id"] = xml_id
+
+                # Title (analytic/title)
+                title_elem = bibl.find(".//tei:analytic/tei:title", ns)
+                if title_elem is not None and title_elem.text:
+                    ref["title"] = title_elem.text.strip()
+
+                # Authors
+                authors = []
+                for author_elem in bibl.findall(".//tei:analytic/tei:author", ns):
+                    pers_name = author_elem.find(".//tei:persName", ns)
+                    if pers_name is not None:
+                        name_parts = []
+                        for fn in pers_name.findall("tei:forename", ns):
+                            if fn.text:
+                                name_parts.append(fn.text)
+                        sn = pers_name.find("tei:surname", ns)
+                        if sn is not None and sn.text:
+                            name_parts.append(sn.text)
+                        if name_parts:
+                            authors.append(" ".join(name_parts))
+                if authors:
+                    ref["authors"] = authors
+
+                # Year - from monogr/imprint/date
+                year = None
+                for date_elem in bibl.findall(".//tei:monogr/tei:imprint/tei:date", ns):
+                    if date_elem.get("when"):
+                        try:
+                            year = int(date_elem.get("when")[:4])
+                            break
+                        except (ValueError, TypeError):
+                            pass
+                if year is None:
+                    # Try imprint/date directly
+                    for date_elem in bibl.findall(".//tei:imprint/tei:date", ns):
+                        if date_elem.get("when"):
+                            try:
+                                year = int(date_elem.get("when")[:4])
+                                break
+                            except (ValueError, TypeError):
+                                pass
+                if year:
+                    ref["year"] = year
+
+                # DOI
+                doi_elem = bibl.find(".//tei:idno[@type='DOI']", ns)
+                if doi_elem is not None and doi_elem.text:
+                    ref["doi"] = doi_elem.text.strip()
+
+                # arXiv ID
+                arxiv_elem = bibl.find(".//tei:idno[@type='arXiv']", ns)
+                if arxiv_elem is not None and arxiv_elem.text:
+                    ref["arxiv_id"] = arxiv_elem.text.strip()
+
+                # Venue/Journal title
+                venue_elem = bibl.find(".//tei:monogr/tei:title", ns)
+                if venue_elem is not None and venue_elem.text:
+                    ref["venue"] = venue_elem.text.strip()
+
+                # Only add if we have at least a title
+                if ref.get("title"):
+                    references.append(ref)
+
+            return references
+
+        except Exception as e:
+            logger.error(f"Reference extraction failed: {e}")
+            return []
 
     async def close(self):
         await self.client.aclose()

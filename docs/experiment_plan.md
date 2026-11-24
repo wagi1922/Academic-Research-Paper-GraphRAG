@@ -54,9 +54,9 @@ Mengevaluasi performa pipeline GraphRAG end-to-end dengan menguji empat variabel
 | Config | Parameter |
 |---|---|
 | **Strategies** | `fixed_512_50`, `fixed_1024_100`, `semantic_nomic`, `proposition_gpt4o_mini` |
-| **Embedding** | `text-embedding-3-small` (fixed) |
+| **Embedding** | `nomic-embed-text-v1.5:free` (fixed) |
 | **Retrieval** | top_k=5, depth=2 (fixed) |
-| **LLM** | `gpt-4o-mini` (fixed) |
+| **LLM** | `inclusionai/ling-3.2-flash:free` (fixed) |
 | **Runs** | 3 per strategy (different random seeds for semantic/proposition) |
 
 **Hypothesis:** Semantic/proposition chunking > fixed-size untuk answer quality; fixed-size > semantic untuk latency.
@@ -67,13 +67,13 @@ Mengevaluasi performa pipeline GraphRAG end-to-end dengan menguji empat variabel
 
 | Config | Parameter |
 |---|---|
-| **Models** | `text-embedding-3-small`, `text-embedding-3-large`, `nomic-embed-text-v1.5`, `bge-large-en-v1.5` |
+| **Models** | `nomic-embed-text-v1.5:free`, `inclusionai/ling-3.2-flash:free`, `google/gemma-4-31b-it:free`, `nvidia/nemotron-3.5-lightning:free`, `particle-ai/particle-1:free` |
 | **Chunking** | Best dari E1 (fixed) |
 | **Retrieval** | top_k=5, depth=2 (fixed) |
-| **LLM** | `gpt-4o-mini` (fixed) |
+| **LLM** | `inclusionai/ling-3.2-flash:free` (fixed) |
 | **Runs** | 3 per model |
 
-**Hypothesis:** `text-embedding-3-large` > `text-embedding-3-small` untuk precision; nomic/bge competetive untuk cost/performance.
+**Hypothesis:** `nomic-embed-text-v1.5:free` competitive; `inclusionai/ling-3.2-flash:free` dual-purpose (LLM + embedding); gemma/nemotron/particle alternatif.
 
 ---
 
@@ -85,7 +85,7 @@ Mengevaluasi performa pipeline GraphRAG end-to-end dengan menguji empat variabel
 | **depth** | 1, 2, 3 |
 | **Chunking** | Best E1 |
 | **Embedding** | Best E2 |
-| **LLM** | `gpt-4o-mini` (fixed) |
+| **LLM** | `inclusionai/ling-3.2-flash:free` (fixed) |
 | **Runs** | 1 per combo (grid search) |
 
 **Hypothesis:** top_k=10, depth=2 optimal balance; depth=3 diminishing returns + latency spike.
@@ -150,7 +150,7 @@ Semua script di `experiments/`:
 
 | Risiko | Mitigasi |
 |---|---|
-| OpenRouter quota habis | Fallback ke Ollama lokal (nomic-embed-text, Llama-3.1-8B) |
+| OpenRouter quota habis | **Swap ke alternate free model** (particle-ai/particle-1:free, nvidia/nemotron-3.5-lightning:free, google/gemma-4-31b-it:free), top-up $10 |
 | Grobid parsing gagal pada paper tertentu | Skip paper, log warning, pakai LlamaParse API sebagai backup |
 | Neo4j vector index lambat | Pre-warm index, gunakan `CALL db.index.vector.queryNodes` dengan parameter optimal |
 | Gold QA pairs tidak representatif | Iterate dengan dosen pembimbing Minggu 2–3, tambah 10 pairs jika perlu |

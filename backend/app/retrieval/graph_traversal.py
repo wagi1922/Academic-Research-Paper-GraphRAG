@@ -6,8 +6,26 @@ Multi-hop graph traversal for GraphRAG context expansion.
 import logging
 from typing import Optional
 from neo4j import AsyncSession
+from neo4j.time import DateTime, Date, Time, Duration
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_neo4j_value(value):
+    """Convert Neo4j temporal types to JSON-serializable values."""
+    if isinstance(value, DateTime):
+        return value.iso_format()
+    if isinstance(value, Date):
+        return value.iso_format()
+    if isinstance(value, Time):
+        return value.iso_format()
+    if isinstance(value, Duration):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _serialize_neo4j_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_serialize_neo4j_value(v) for v in value]
+    return value
 
 
 class GraphTraversal:
@@ -89,9 +107,13 @@ class GraphTraversal:
         paths = []
 
         # Citation chains (backward and forward)
-        for direction in [">", "<"]:
+        for direction in ["out", "in"]:
+            if direction == "out":
+                pattern = f"(seed:Paper)-[:{rel_filter}*1..{depth}]->(connected:Paper)"
+            else:
+                pattern = f"(seed:Paper)<-[:{rel_filter}*1..{depth}]-(connected:Paper)"
             query = f"""
-            MATCH path = (seed:Paper)-[:{rel_filter}*1..{depth} {direction}]-(connected:Paper)
+            MATCH path = {pattern}
             WHERE seed.id IN $seed_ids
             RETURN path
             LIMIT 20
@@ -125,17 +147,25 @@ class GraphTraversal:
 
     def _node_to_dict(self, node) -> dict:
         labels = list(node.labels)
-        props = dict(node)
-        props["labels"] = labels
-        props["id"] = node.element_id
+        props = _serialize_neo4j_value(dict(node))
+        if isinstance(props, dict):
+            props["labels"] = labels
+            props["id"] = node.element_id
+        else:
+            props = {"labels": labels, "id": node.element_id}
         return props
 
     def _rel_to_dict(self, rel) -> dict:
+        props = _serialize_neo4j_value(dict(rel))
+        if not isinstance(props, dict):
+            props = {}
         return {
             "type": rel.type,
             "source": rel.start_node.element_id,
             "target": rel.end_node.element_id,
-            "properties": dict(rel),
+            "properties": props,
+            "id": rel.element_id,
+            "label": rel.type,
         }
 
 
@@ -171,8 +201,33 @@ async def get_neighbors(
         return {"nodes": [], "edges": []}
 
     return {
-        "nodes": [dict(n) for n in record["nodes"]],
-        "edges": [dict(r) for r in record["relationships"]],
+        "nodes": [_node_to_fe_dict(n) for n in record["nodes"]],
+        "edges": [_rel_to_fe_dict(r) for r in record["relationships"]],
+    }
+
+
+def _node_to_fe_dict(node) -> dict:
+    labels = list(node.labels)
+    props = _serialize_neo4j_value(dict(node))
+    if isinstance(props, dict):
+        props["labels"] = labels
+        props["id"] = node.element_id
+    else:
+        props = {"labels": labels, "id": node.element_id}
+    return props
+
+
+def _rel_to_fe_dict(rel) -> dict:
+    props = _serialize_neo4j_value(dict(rel))
+    if not isinstance(props, dict):
+        props = {}
+    return {
+        "type": rel.type,
+        "source": rel.start_node.element_id,
+        "target": rel.end_node.element_id,
+        "properties": props,
+        "id": rel.element_id,
+        "label": rel.type,
     }
 
 
@@ -189,7 +244,10 @@ async def find_papers_by_method(
     LIMIT $limit
     """
     result = await session.run(query, method_name=method_name, limit=limit)
-    return [dict(record["p"]) for record in result]
+    records = []
+    async for record in result:
+        records.append(dict(record["p"]))
+    return records
 
 
 async def find_papers_by_dataset(
@@ -205,7 +263,10 @@ async def find_papers_by_dataset(
     LIMIT $limit
     """
     result = await session.run(query, dataset_name=dataset_name, limit=limit)
-    return [dict(record["p"]) for record in result]
+    records = []
+    async for record in result:
+        records.append(dict(record["p"]))
+    return records
 
 
 async def find_papers_by_concept(
@@ -221,4 +282,7 @@ async def find_papers_by_concept(
     LIMIT $limit
     """
     result = await session.run(query, concept_name=concept_name, limit=limit)
-    return [dict(record["p"]) for record in result]
+    records = []
+    async for record in result:
+        records.append(dict(record["p"]))
+    return records

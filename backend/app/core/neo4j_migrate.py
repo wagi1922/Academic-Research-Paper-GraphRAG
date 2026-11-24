@@ -37,7 +37,6 @@ SCHEMA_STATEMENTS = [
     # Paper
     "CREATE INDEX paper_title_idx IF NOT EXISTS FOR (p:Paper) ON (p.title)",
     "CREATE INDEX paper_year_idx IF NOT EXISTS FOR (p:Paper) ON (p.year)",
-    "CREATE INDEX paper_embedding_idx IF NOT EXISTS FOR (p:Paper) ON (p.embedding)",
 
     # Author
     "CREATE INDEX author_name_idx IF NOT EXISTS FOR (a:Author) ON (a.name)",
@@ -63,7 +62,7 @@ SCHEMA_STATEMENTS = [
     FOR (p:Paper) ON (p.embedding)
     OPTIONS {
         indexConfig: {
-            `vector.dimensions`: 768,
+            `vector.dimensions`: 1536,
             `vector.similarity_function`: 'cosine'
         }
     }
@@ -83,13 +82,12 @@ SCHEMA_STATEMENTS = [
 CHUNK_STATEMENTS = [
     "CREATE CONSTRAINT chunk_id_unique IF NOT EXISTS FOR (c:Chunk) REQUIRE c.id IS UNIQUE",
     "CREATE INDEX chunk_paper_id_idx IF NOT EXISTS FOR (c:Chunk) ON (c.paper_id)",
-    "CREATE INDEX chunk_embedding_idx IF NOT EXISTS FOR (c:Chunk) ON (c.embedding)",
     """
     CREATE VECTOR INDEX chunk_vector_idx IF NOT EXISTS
     FOR (c:Chunk) ON (c.embedding)
     OPTIONS {
         indexConfig: {
-            `vector.dimensions`: 768,
+            `vector.dimensions`: 1536,
             `vector.similarity_function`: 'cosine'
         }
     }
@@ -210,10 +208,12 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == "--drop":
-        confirm = input("⚠️  This will DROP all constraints and indexes. Type 'yes' to confirm: ")
-        if confirm.lower() == "yes":
-            asyncio.run(drop_all_schema())
-        else:
-            print("Cancelled.")
+        force = "--force" in sys.argv
+        if not force:
+            confirm = input("⚠️  This will DROP all constraints and indexes. Type 'yes' to confirm: ")
+            if confirm.lower() != "yes":
+                print("Cancelled.")
+                sys.exit(0)
+        asyncio.run(drop_all_schema())
     else:
         asyncio.run(run_migration(include_chunks=True))

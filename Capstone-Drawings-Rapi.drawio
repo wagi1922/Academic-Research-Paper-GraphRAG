@@ -10,15 +10,13 @@
         <mxCell id="arxiv" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=12;" value="📚 arXiv / Semantic Scholar" vertex="1">
           <mxGeometry height="70" width="200" x="600" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="openrouter" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=12;" value="🤖 OpenRouter API\n(LLM + Embeddings)" vertex="1">
+        <mxCell id="openrouter" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=12;" value="🤖 OpenRouter API (FREE Only)\nLLM: inclusionai/ling-3.2-flash:free\nEmbed: nomic-embed-text-v1.5:free" vertex="1">
           <mxGeometry height="70" width="200" x="600" y="150" as="geometry" />
         </mxCell>
         <mxCell id="grobid" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=12;" value="📄 Grobid / LlamaParse\n(PDF Parsing)" vertex="1">
           <mxGeometry height="70" width="200" x="600" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="ollama" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#C2185B;fontSize=12;" value="🏠 Ollama Local\n(Fallback LLM/Embed)" vertex="1">
-          <mxGeometry height="70" width="200" x="600" y="344" as="geometry" />
-        </mxCell>
+        
         <mxCell id="system" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=16;fontStyle=1;strokeWidth=3;" value="🔬 GraphRAG System\nAcademic &amp; Research Paper Knowledge Engine" vertex="1">
           <mxGeometry height="250" width="280" x="250" y="150" as="geometry" />
         </mxCell>
@@ -44,9 +42,7 @@
         <mxCell id="e4" edge="1" parent="1" source="grobid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6A1B9A;strokeWidth=2;endArrow=block;" target="system">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" edge="1" parent="1" source="ollama" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C2185B;strokeWidth=2;endArrow=block;dashed=1;" target="system">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        
         <mxCell id="e6" edge="1" parent="1" source="system" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;" target="answer">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -82,7 +78,7 @@
           <mxGeometry x="100" y="450" width="250" height="120" as="geometry" />
         </mxCell>
         <!-- External APIs -->
-        <mxCell id="ext_apis" value="🌐 External APIs\n• OpenRouter (LLM/Embedding)\n• Crossref / Semantic Scholar\n• arXiv API\n• Ollama Local (fallback)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;dashed=1;" vertex="1" parent="docker">
+        <mxCell id="ext_apis" value="🌐 External APIs\n• OpenRouter (LLM/Embedding) - FREE ONLY\n• Crossref / Semantic Scholar\n• arXiv API" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;dashed=1;" vertex="1" parent="docker">
           <mxGeometry x="400" y="450" width="550" height="150" as="geometry" />
         </mxCell>
         <!-- Backend Internal Modules -->
@@ -120,7 +116,7 @@
         <mxCell id="parser" value="🔧 Parser\nGrobid / LlamaParse\n→ Raw Text + Metadata" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
           <mxGeometry x="10" y="80" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="chunker" value="✂️ Chunker\nStrategies: fixed_512_50, fixed_1024_100,\nsemantic_nomic, proposition_gpt4o_mini\n→ Chunks dengan overlap" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+        <mxCell id="chunker" value="✂️ Chunker\nStrategies: fixed_512_50, fixed_1024_100,\nsemantic_nomic_free, semantic_ling_free\nproposition_ling_free\n→ Chunks dengan overlap" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
           <mxGeometry x="240" y="80" width="200" height="80" as="geometry" />
         </mxCell>
         <mxCell id="extractor" value="🧠 Entity &amp; Relation Extractor\nLLM + Pydantic (Instructor)\n→ Entities: Concept, Method, Dataset, Metric\n→ Relations: USES, PROPOSES, EVALUATES, CITES" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
@@ -129,7 +125,7 @@
         <mxCell id="graph_writer" value="💾 Graph Writer (Batch Cypher)\nNeo4j Python Driver + APOC\n→ Nodes: Paper, Chunk, Entity\n→ Edges: HAS_CHUNK, MENTIONS, RELATES_TO\n→ Vector Index: chunk_embedding" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
           <mxGeometry x="10" y="300" width="430" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="embedder" value="🔢 Embedding Model\nOpenRouter / Olloma\n→ Vector per Chunk (1536-d / 768-d)\n→ Neo4j Vector Index Upsert" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
+        <mxCell id="embedder" value="🔢 Embedding Model\nOpenRouter FREE ONLY\n→ nomic-embed-text-v1.5:free (768-d)\n→ inclusionai/ling-3.2-flash:free (1024-d)\n→ Neo4j Vector Index Upsert" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="ingestion">
           <mxGeometry x="10" y="420" width="430" height="70" as="geometry" />
         </mxCell>
         <!-- Query Pipeline -->
@@ -151,7 +147,7 @@
         <mxCell id="context_builder" value="🏗️ Context Builder\nAssemble: Vector Chunks + Graph Paths + Entities\n→ Prompt Template" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
           <mxGeometry x="10" y="260" width="430" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="synthesizer" value="✍️ LLM Synthesis\nOpenRouter / Ollama\n→ Answer + Citations [Paper ID]" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
+        <mxCell id="synthesizer" value="✍️ LLM Synthesis\nOpenRouter FREE ONLY\ninclusionai/ling-3.2-flash:free\n→ Answer + Citations [Paper ID]" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
           <mxGeometry x="10" y="360" width="200" height="70" as="geometry" />
         </mxCell>
         <mxCell id="citation_validator" value="✅ Citation Validator\nCheck sources exist in subgraph\n→ Final Answer" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="query">
@@ -219,7 +215,7 @@
         <mxCell id="grobid_svc" value="📄 Grobid" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="600" y="50" width="120" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="llm" value="🤖 LLM\n(OpenRouter/Ollama)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#C2185B;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="llm" value="🤖 LLM\nOpenRouter FREE ONLY\ninclusionai/ling-3.2-flash:free" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="780" y="50" width="150" height="120" as="geometry" />
         </mxCell>
         <mxCell id="neo4j_svc" value="🗄️ Neo4j\n+ Vector Index" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#E8EAED;strokeColor=#37474F;fontSize=12;" vertex="1" parent="1">

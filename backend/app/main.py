@@ -51,11 +51,13 @@ app.add_middleware(
 )
 
 # Include routers
-from app.api.v1.endpoints import ingest, query, graph
+from app.api.v1.endpoints import ingest, query, graph, catalog
 
 app.include_router(ingest.router, prefix="/api/v1")
 app.include_router(query.router, prefix="/api/v1")
 app.include_router(graph.router, prefix="/api/v1")
+app.include_router(catalog.router, prefix="/api/v1")
+app.include_router(catalog.entities_router, prefix="/api/v1")
 
 
 @app.get("/")

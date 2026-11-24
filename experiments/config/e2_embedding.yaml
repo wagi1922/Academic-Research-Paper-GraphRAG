@@ -1,5 +1,6 @@
 # Experiment E2: Embedding Model Comparison
 # Compare embedding models for vector search quality
+# OpenRouter FREE models only — NO PAID, NO LOCAL
 
 experiment:
   name: "E2_Embedding_Model"
@@ -8,53 +9,35 @@ experiment:
 
 embeddings:
   models:
-    - name: "text-embedding-3-small"
-      provider: "openrouter"
-      model_id: "openrouter/text-embedding-3-small"
-      dimensions: 1536
-      description: "OpenAI text-embedding-3-small via OpenRouter"
-
-    - name: "text-embedding-3-large"
-      provider: "openrouter"
-      model_id: "openrouter/text-embedding-3-large"
-      dimensions: 3072
-      description: "OpenAI text-embedding-3-large via OpenRouter"
-
-    - name: "nomic-embed-text"
-      provider: "openrouter"
-      model_id: "openrouter/nomic-embed-text"
-      dimensions: 768
-      description: "Nomic embed-text v1.5 via OpenRouter"
-
     - name: "nomic-embed-text-v1.5"
       provider: "openrouter"
-      model_id: "openrouter/nomic-embed-text-v1.5"
+      model_id: "nomic-embed-text-v1.5:free"
       dimensions: 768
-      description: "Nomic embed-text v1.5 (updated)"
+      description: "Nomic Embed Text v1.5 (OpenRouter free, 768d)"
 
-    - name: "indobert-base"
-      provider: "local"
-      model_id: "indobenchmark/indobert-base-p1"
-      dimensions: 768
-      description: "IndoBERT base (Indonesian language optimized)"
-
-    - name: "indobert-large"
-      provider: "local"
-      model_id: "indobenchmark/indobert-large-p1"
+    - name: "ling-3.2-flash"
+      provider: "openrouter"
+      model_id: "inclusionai/ling-3.2-flash:free"
       dimensions: 1024
-      description: "IndoBERT large (Indonesian language optimized)"
+      description: "Ling 3.2 Flash (OpenRouter free, dual-purpose LLM+embedding, 1024d)"
 
-    - name: "m3e-base"
-      provider: "local"
-      model_id: "moka-ai/m3e-base"
-      dimensions: 768
-      description: "M3E base (multilingual Chinese/English)"
+    - name: "gemma-4-31b"
+      provider: "openrouter"
+      model_id: "google/gemma-4-31b-it:free"
+      dimensions: 2048
+      description: "Gemma 4 31B IT (OpenRouter free, 2048d)"
 
-    - name: "bge-m3"
-      provider: "local"
-      model_id: "BAAI/bge-m3"
+    - name: "nemotron-3.5-lightning"
+      provider: "openrouter"
+      model_id: "nvidia/nemotron-3.5-lightning:free"
       dimensions: 1024
-      description: "BGE-M3 (multilingual, multi-granularity)"
+      description: "Nemotron 3.5 Lightning (OpenRouter free, 1024d)"
+
+    - name: "particle-1"
+      provider: "openrouter"
+      model_id: "particle-ai/particle-1:free"
+      dimensions: 1024
+      description: "Particle 1 (OpenRouter free, 1024d)"
 
 chunking:
   # Fixed chunking for fair comparison

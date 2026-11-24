@@ -22,7 +22,7 @@ class VectorSearch:
     ) -> list[dict]:
         """Search papers by embedding similarity using Neo4j Vector Index."""
         query = """
-        CALL db.index.vector.queryNodes('paper_abstract_vector_idx', $top_k, $embedding)
+        CALL db.index.vector.queryNodes('paper_vector_idx', $top_k, $embedding)
         YIELD node, score
         WHERE score >= $min_score
         RETURN node.id as paper_id, node.title as title, node.abstract as abstract,

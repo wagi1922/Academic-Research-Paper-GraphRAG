@@ -84,6 +84,7 @@ class QueryRequest(BaseModel):
     depth: int = Field(default=2, ge=1, le=3, description="Graph traversal hops")
     include_chunks: bool = Field(default=True, description="Include vector chunks in context")
     stream: bool = Field(default=False, description="Stream response via SSE")
+    retrieval_only: bool = Field(default=False, description="Skip LLM synthesis, return retrieval results only")
 
 
 class SourceCitation(BaseModel):

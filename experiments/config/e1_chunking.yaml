@@ -1,5 +1,6 @@
 # Experiment E1: Chunking Strategy Comparison
 # Compare fixed-size (512/50, 1024/100) vs semantic vs proposition-based chunking
+# OpenRouter FREE models only — NO PAID, NO LOCAL
 
 experiment:
   name: "E1_Chunking_Strategy"
@@ -22,30 +23,30 @@ chunking:
         chunk_overlap: 100
       description: "Fixed-size 1024 chars with 100 overlap"
 
-    - name: "semantic_nomic"
+    - name: "semantic_nomic_free"
       type: "semantic"
       params:
-        embedding_model: "nomic-embed-text"
+        embedding_model: "nomic-embed-text-v1.5:free"
         breakpoint_threshold_type: "percentile"
         breakpoint_threshold_amount: 95.0
         min_chunk_size: 100
-      description: "Semantic chunking with nomic-embed-text"
+      description: "Semantic chunking with Nomic Embed Text v1.5 (OpenRouter free)"
 
-    - name: "semantic_instructor"
+    - name: "semantic_ling_free"
       type: "semantic"
       params:
-        embedding_model: "hkunlp/instructor-xl"
+        embedding_model: "inclusionai/ling-3.2-flash:free"
         breakpoint_threshold_type: "percentile"
         breakpoint_threshold_amount: 95.0
         min_chunk_size: 100
-      description: "Semantic chunking with Instructor-XL"
+      description: "Semantic chunking with Ling 3.2 Flash (OpenRouter free)"
 
-    - name: "proposition_gpt4o_mini"
+    - name: "proposition_ling_free"
       type: "proposition"
       params:
-        llm_model: "openrouter/gpt-4o-mini"
+        llm_model: "inclusionai/ling-3.2-flash:free"
         max_propositions_per_chunk: 1
-      description: "Proposition-based chunking with GPT-4o-mini"
+      description: "Proposition-based chunking with Ling 3.2 Flash (OpenRouter free)"
 
 evaluation:
   metrics:

@@ -9,11 +9,30 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.retrieval.graph_traversal import GraphTraversal, get_neighbors
-from app.core.neo4j_driver import get_neo4j_session
+from app.core.neo4j_driver import get_neo4j_driver, get_neo4j_session
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/graph", tags=["graph"])
+
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint under /api/v1/graph/health."""
+    neo4j_status = "unknown"
+    try:
+        driver = get_neo4j_driver()
+        async with driver.session() as session:
+            await session.run("RETURN 1")
+        neo4j_status = "connected"
+    except Exception as e:
+        neo4j_status = f"error: {str(e)}"
+
+    return {
+        "status": "healthy" if neo4j_status == "connected" else "degraded",
+        "neo4j": neo4j_status,
+        "version": "0.1.0",
+    }
 
 
 class VisualizeRequest(BaseModel):
@@ -216,6 +235,8 @@ async def get_graph_stats():
                 "concepts": "MATCH (c:Concept) RETURN count(c) as count",
                 "methods": "MATCH (m:Method) RETURN count(m) as count",
                 "datasets": "MATCH (d:Dataset) RETURN count(d) as count",
+                "chunks": "MATCH (c:Chunk) RETURN count(c) as count",
+                "citations": "MATCH ()-[r:CITES]->() RETURN count(r) as count",
                 "relations": "MATCH ()-[r]->() RETURN count(r) as count",
             }
 
@@ -234,23 +255,28 @@ async def get_graph_stats():
 
 def _format_node(node: dict) -> dict:
     """Format Neo4j node for frontend visualization."""
-    labels = node.get("labels", [])
+    from app.retrieval.graph_traversal import _serialize_neo4j_value
+    
+    # Serialize all node properties to handle Neo4j temporal types
+    serialized_node = {k: _serialize_neo4j_value(v) for k, v in node.items()}
+    
+    labels = serialized_node.get("labels", [])
     primary_label = labels[0] if labels else "Node"
 
     # Extract display name
     name = (
-        node.get("name")
-        or node.get("title")
-        or node.get("id")
+        serialized_node.get("name")
+        or serialized_node.get("title")
+        or serialized_node.get("id")
         or "Unknown"
     )
 
     # Build node data
     return {
-        "id": node.get("id", node.get("element_id", "unknown")),
+        "id": serialized_node.get("id", serialized_node.get("element_id", "unknown")),
         "label": name,
         "type": primary_label.lower(),
-        "properties": {k: v for k, v in node.items() if k not in ["labels", "id", "element_id"]},
+        "properties": {k: v for k, v in serialized_node.items() if k not in ["labels", "id", "element_id"]},
         "classes": primary_label.lower(),
     }
 

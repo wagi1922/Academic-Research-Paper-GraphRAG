@@ -1,5 +1,6 @@
 # Experiment E4: Ablation Study
 # Test contribution of each GraphRAG component
+# OpenRouter FREE models only — NO PAID, NO LOCAL
 
 experiment:
   name: "E4_Ablation_Study"
@@ -16,8 +17,8 @@ configurations:
       context_builder: true
       citation_validation: true
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 5
     depth: 2
 
@@ -30,8 +31,8 @@ configurations:
       context_builder: true  # Uses only vector chunks
       citation_validation: true
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 10  # More chunks to compensate
     depth: 0
 
@@ -44,8 +45,8 @@ configurations:
       context_builder: true
       citation_validation: true
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 5
     depth: 0
 
@@ -58,8 +59,8 @@ configurations:
       context_builder: true
       citation_validation: true
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 5
     depth: 2
 
@@ -72,8 +73,8 @@ configurations:
       context_builder: true
       citation_validation: false
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 5
     depth: 2
 
@@ -86,8 +87,8 @@ configurations:
       context_builder: true
       citation_validation: true
     chunking_strategy: "fixed_512_50"
-    embedding_model: "openrouter/nomic-embed-text"
-    llm_model: "openrouter/gpt-4o-mini"
+    embedding_model: "nomic-embed-text-v1.5:free"
+    llm_model: "inclusionai/ling-3.2-flash:free"
     top_k: 0
     depth: 2
     # Uses gold standard seed papers

@@ -20,6 +20,7 @@ from app.ingestion.parser import PDFParser
 from app.ingestion.chunker import get_chunker, Chunk
 from app.ingestion.extractor import EntityExtractor
 from app.ingestion.graph_writer import GraphWriter
+from app.ingestion.embedding_service import get_embedding_service
 from app.core.neo4j_driver import get_neo4j_session
 from app.core.config import settings
 
@@ -112,6 +113,7 @@ async def _process_ingestion(
 ):
     """Background task to process paper ingestion."""
     job = ingestion_jobs[job_id]
+    stats = None
 
     try:
         # Step 1: Parse PDF
@@ -140,7 +142,34 @@ async def _process_ingestion(
         job.progress = 30
         job.message = "Chunking text..."
 
-        chunker = get_chunker(chunking_strategy)
+        # Get embeddings for semantic chunking
+        embeddings = None
+        if chunking_strategy.startswith("semantic_"):
+            embedding_service = await get_embedding_service()
+            if embedding_service:
+                # Create langchain embeddings wrapper using OpenRouter
+                from langchain_openai import OpenAIEmbeddings
+                embeddings = OpenAIEmbeddings(
+                    api_key=embedding_service.api_key,
+                    base_url=embedding_service.base_url,
+                    model=embedding_service.model,
+                    timeout=60,
+                    max_retries=2,
+                )
+                job.message = f"Chunking text with {chunking_strategy}..."
+
+        # Get LLM client for proposition chunking
+        llm_client = None
+        if chunking_strategy.startswith("proposition_") and settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder"):
+            from openai import AsyncOpenAI
+            llm_client = AsyncOpenAI(
+                api_key=settings.openrouter_api_key,
+                base_url="https://openrouter.ai/api/v1",
+                timeout=120.0,
+            )
+            job.message = f"Chunking text with {chunking_strategy}..."
+
+        chunker = get_chunker(chunking_strategy, embeddings=embeddings, llm_client=llm_client)
         chunks = chunker.chunk(full_text, metadata)
 
         # Step 3: Extract entities (optional - requires OpenRouter API key)
@@ -148,10 +177,11 @@ async def _process_ingestion(
         job.message = "Extracting entities..."
 
         entities = ExtractedEntities()
-        if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("sk-or-v1-YOUR_ACTUAL_KEY_HERE"):
+        if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("«redacted:sk-…»"):
             extractor = EntityExtractor(
                 api_key=settings.openrouter_api_key,
                 model=settings.llm_model,
+                timeout=120.0,
             )
             entities = await extractor.extract_from_chunks([c.text for c in chunks], title)
         else:
@@ -274,15 +304,15 @@ async def _process_batch_ingestion(
             # Full ingestion pipeline per file
             content = await file.read()
             filename = file.filename or f"document_{idx}.pdf"
-            
+
             # Use provided metadata or derive from filename
             title = titles[idx] if idx < len(titles) and titles[idx] else filename.replace(".pdf", "")
             year = years[idx] if idx < len(years) and years[idx] else 2024
             doi = dois[idx] if idx < len(dois) and dois[idx] else None
             venue = venues[idx] if idx < len(venues) and venues[idx] else "arXiv"
-            
+
             paper_id = doi or str(uuid.uuid4())[:12]
-            
+
             # Step 1: Parse PDF
             parser = PDFParser(grobid_url=settings.grobid_url)
             parse_result = await parser.parse_pdf_grobid_bytes(content, filename)
@@ -302,15 +332,40 @@ async def _process_batch_ingestion(
             }
 
             # Step 2: Chunk text
-            chunker = get_chunker(chunking_strategy)
+            # Get embeddings for semantic chunking
+            embeddings = None
+            if chunking_strategy.startswith("semantic_"):
+                embedding_service = await get_embedding_service()
+                if embedding_service:
+                    from langchain_openai import OpenAIEmbeddings
+                    embeddings = OpenAIEmbeddings(
+                        api_key=embedding_service.api_key,
+                        base_url=embedding_service.base_url,
+                        model=embedding_service.model,
+                        timeout=60,
+                        max_retries=2,
+                    )
+
+            # Get LLM client for proposition chunking
+            llm_client = None
+            if chunking_strategy.startswith("proposition_") and settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder"):
+                from openai import AsyncOpenAI
+                llm_client = AsyncOpenAI(
+                    api_key=settings.openrouter_api_key,
+                    base_url="https://openrouter.ai/api/v1",
+                    timeout=120.0,
+                )
+
+            chunker = get_chunker(chunking_strategy, embeddings=embeddings, llm_client=llm_client)
             chunks = chunker.chunk(full_text, metadata)
 
             # Step 3: Extract entities (optional - requires OpenRouter API key)
             entities = ExtractedEntities()
-            if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("sk-or-v1-YOUR_ACTUAL_KEY_HERE"):
+            if settings.openrouter_api_key and settings.openrouter_api_key not in ("***", "", "placeholder") and not settings.openrouter_api_key.startswith("«redacted:sk-…»"):
                 extractor = EntityExtractor(
                     api_key=settings.openrouter_api_key,
                     model=settings.llm_model,
+                    timeout=120.0,
                 )
                 entities = await extractor.extract_from_chunks([c.text for c in chunks], title)
             else:

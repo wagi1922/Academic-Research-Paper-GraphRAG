@@ -55,7 +55,7 @@ class ContextBuilder:
                 text = text[:self.max_chunk_chars] + "..."
 
             formatted.append(
-                f"[Chunk {i+1} | Paper: {title} ({paper_id}) | Score: {score:.3f}]\n{text}"
+                f"[Chunk {i+1} | Paper ID: {paper_id} | Title: {title} | Score: {score:.3f}]\n{text}"
             )
 
         return "\n\n---\n\n".join(formatted)
@@ -90,25 +90,23 @@ class ContextBuilder:
 
         return "\n\n---\n\n".join(formatted)
 
-    def _format_entities(self, entities: ExtractedEntities) -> str:
+    def _format_entities(self, entities: Optional[ExtractedEntities]) -> str:
+        if not entities:
+            return "Tidak ada entitas teridentifikasi."
+        
         parts = []
-
         if entities.authors:
             authors = ", ".join([f"{a.name} ({a.institution})" if a.institution else a.name for a in entities.authors[:10]])
             parts.append(f"Penulis: {authors}")
-
         if entities.concepts:
             concepts = ", ".join([f"{c.name} [{c.category}]" for c in entities.concepts[:15]])
             parts.append(f"Konsep: {concepts}")
-
         if entities.methods:
             methods = ", ".join([f"{m.name}" + (f" - {m.description[:50]}" if m.description else "") for m in entities.methods[:10]])
             parts.append(f"Metode: {methods}")
-
         if entities.datasets:
             datasets = ", ".join([f"{d.name}" + (f" ({d.domain})" if d.domain else "") for d in entities.datasets[:10]])
             parts.append(f"Dataset: {datasets}")
-
         if entities.relations:
             rels = []
             for r in entities.relations[:10]:
@@ -126,10 +124,12 @@ class ContextBuilder:
             title = p.get("title", "Untitled")
             year = p.get("year", "")
             doi = p.get("doi", "")
+            paper_id = p.get("paper_id", p.get("id", doi or "unknown"))
             score = p.get("score", p.get("hybrid_score", 0))
             year_str = f" ({year})" if year else ""
             doi_str = f" [DOI: {doi}]" if doi else ""
-            formatted.append(f"• {title}{year_str}{doi_str} (score: {score:.3f})")
+            id_str = f" [ID: {paper_id}]"
+            formatted.append(f"• {title}{year_str}{doi_str}{id_str} (score: {score:.3f})")
 
         return "\n".join(formatted)
 
@@ -139,10 +139,27 @@ SYSTEM_PROMPT = """Anda adalah research assistant yang menjawab pertanyaan berda
 Aturan:
 1. Jawab HANYA berdasarkan informasi dalam KONTEKS.
 2. Sertakan sitasi [Paper ID] untuk setiap klaim/fakta yang Anda sebutkan.
-3. Jika informasi tidak ada dalam konteks, nyatakan: "Informasi tidak ditemukan dalam konteks yang diberikan."
-4. Gunakan bahasa Indonesia yang formal dan akademik.
-5. Jawab secara naratif, terstruktur, dan komprehensif.
-6. Jika ada data kuantitatif, sebutkan angkanya dengan sitasi."""
+3. Gunakan Paper ID yang tepat seperti yang tertera di konteks (contoh: [10.48550/arXiv.2501.14050v4] atau [2406.06086v2]).
+4. JANGAN gunakan angka urut [1], [2], [3] — gunakan Paper ID yang sebenarnya.
+5. Jika informasi tidak ada dalam konteks, nyatakan: "Informasi tidak ditemukan dalam konteks yang diberikan."
+6. Gunakan bahasa Indonesia yang formal dan akademik.
+7. Jawab secara naratif, terstruktur, dan komprehensif.
+8. Jika ada data kuantitatif, sebutkan angkanya dengan sitasi.
+
+CONTOH FORMAT SITASI YANG BENAR:
+Konteks berisi Paper ID: [10.48550/arXiv.2501.14050v4] (title: "GraphRAG for Academic Literature")
+Paper ID: [2406.06086v2] (title: "Hybrid LSTM-Attention for Inflation Forecasting")
+
+Pertanyaan: "Apa metode yang digunakan dalam paper GraphRAG?"
+JAWABAN BENAR: "Paper [10.48550/arXiv.2501.14050v4] menggunakan pendekatan GraphRAG yang menggabungkan vector search dengan knowledge graph traversal untuk retrieval literaturr ilmiah."
+
+Pertanyaan: "Berapa akurasi prediksi inflasi pada model hybrid?"
+JAWABAN BENAR: "Model hybrid LSTM-Attention mencapai MSE 0.023 pada prediksi inflasi Indonesia [2406.06086v2]."
+
+FORMAT SALAH (JANGAN LAKUKAN):
+- [1], [2], [3] — angka urut tidak diizinkan
+- [GraphRAG paper] — nama paper bukan Paper ID
+- Tanpa sitasi — setiap klaim harus memiliki [Paper ID]"""
 
 QUERY_PROMPT_TEMPLATE = """{system_prompt}
 
@@ -180,7 +197,11 @@ def build_prompt_with_citations(context_dict: dict, user_query: str, citation_st
     base = build_prompt(context_dict, user_query)
 
     if citation_style == "bracket":
-        citation_instruction = "\n\nFORMAT SITASI: Gunakan [Paper ID] di akhir setiap kalimat yang mengandung klaim dari paper tersebut."
+        citation_instruction = """
+
+FORMAT SITASI WAJIB: Gunakan [Paper ID] di akhir SETIAP KALIMAT yang mengandung klaim/fakta dari paper. Paper ID harus PERSIS seperti di konteks (contoh: [10.48550/arXiv.2501.14050v4], [2406.06086v2]). LARANG: [1], [2], [3] atau nama paper.
+
+CATATAN: Setiap kalimat jawaban WAJIB diakhiri [Paper ID]. Jika satu kalimat merujuk multiple paper, gunakan [ID1; ID2]. Jika tidak ada referensi untuk kalimat tersebut, JANGAN buat kalimat tersebut."""
     elif citation_style == "numbered":
         citation_instruction = "\n\nFORMAT SITASI: Gunakan nomor urut [1], [2], dll. sesuai urutan paper di daftar referensi."
     else:

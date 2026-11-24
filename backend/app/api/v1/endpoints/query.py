@@ -13,6 +13,7 @@ from app.retrieval.vector_search import VectorSearch
 from app.retrieval.graph_traversal import GraphTraversal
 from app.retrieval.context_builder import ContextBuilder, RetrievalContext, build_prompt
 from app.retrieval.synthesizer import AnswerSynthesizer, validate_answer_grounding
+from app.ingestion.embedding_service import get_embedding_service
 from app.core.neo4j_driver import get_neo4j_session
 from app.core.config import settings
 
@@ -31,7 +32,10 @@ async def query_graphrag(request: QueryRequest):
     """
     Main GraphRAG query endpoint.
     Pipeline: vector search -> graph traversal -> context building -> LLM synthesis -> validation.
+    If retrieval_only=True, skip LLM synthesis and return retrieval results only.
     """
+    import time
+    start_time = time.perf_counter()
     try:
         async for session in get_neo4j_session():
             vector_search = VectorSearch(session)
@@ -39,10 +43,6 @@ async def query_graphrag(request: QueryRequest):
             context_builder = ContextBuilder(
                 max_vector_chunks=request.top_k,
                 max_graph_paths=request.depth,
-            )
-            synthesizer = AnswerSynthesizer(
-                api_key=settings.openrouter_api_key,
-                model=settings.llm_model,
             )
 
             # Step 1: Generate query embedding
@@ -69,6 +69,7 @@ async def query_graphrag(request: QueryRequest):
                         "grounding_score": 0,
                         "valid_citations": 0,
                         "total_citations": 0,
+                        "latency_ms": (time.perf_counter() - start_time) * 1000,
                     },
                 )
 
@@ -97,7 +98,54 @@ async def query_graphrag(request: QueryRequest):
             )
             context_dict = context_builder.build(context)
 
-            # Step 6: Synthesize answer
+            # Step 6: If retrieval_only, skip LLM synthesis and return retrieval results
+            if request.retrieval_only:
+                # Format sources from vector_results
+                sources = [
+                    {
+                        "paper_id": r["paper_id"],
+                        "title": r.get("title", ""),
+                        "year": r.get("year"),
+                        "authors": r.get("authors", []),
+                        "relevance_score": r.get("score", 0),
+                        "citation_text": None,
+                    }
+                    for r in vector_results
+                ]
+                # Format graph paths
+                graph_paths = [
+                    {
+                        "source": p.get("source", ""),
+                        "relation": p.get("relation", ""),
+                        "target": p.get("target", ""),
+                        "source_type": p.get("source_type", ""),
+                        "target_type": p.get("target_type", ""),
+                    }
+                    for p in graph_result.get("paths", [])
+                ]
+
+                return QueryResponseExtended(
+                    answer=f"Retrieval-only mode. Found {len(vector_results)} seed papers, {len(chunk_results)} chunks, {len(graph_result.get('paths', []))} graph paths.",
+                    sources=sources,
+                    graph_path=graph_paths,
+                    extracted_entities={},
+                    retrieval_metadata={
+                        "vector_results": len(vector_results),
+                        "chunk_results": len(chunk_results),
+                        "graph_paths": len(graph_result.get("paths", [])),
+                        "seed_papers": seed_paper_ids,
+                        "grounding_score": 0,
+                        "valid_citations": 0,
+                        "total_citations": 0,
+                        "latency_ms": (time.perf_counter() - start_time) * 1000,
+                    },
+                )
+
+            # Step 6 (normal): Synthesize answer with LLM
+            synthesizer = AnswerSynthesizer(
+                api_key=settings.openrouter_api_key,
+                model=settings.llm_model,
+            )
             response = await synthesizer.synthesize(
                 query=request.query,
                 context=context_dict,
@@ -123,6 +171,7 @@ async def query_graphrag(request: QueryRequest):
                     "grounding_score": grounding.get("grounding_score", 0),
                     "valid_citations": grounding.get("valid_citations", 0),
                     "total_citations": grounding.get("total_citations", 0),
+                    "latency_ms": (time.perf_counter() - start_time) * 1000,
                 },
             )
 
@@ -133,36 +182,43 @@ async def query_graphrag(request: QueryRequest):
 
 @router.get("/suggestions")
 async def get_query_suggestions(
-    partial: str = Query(..., min_length=2),
-    limit: int = Query(5, ge=1, le=20),
+    partial: str = Query("", description="Partial query text for filtering"),
+    limit: int = Query(6, ge=1, le=20),
 ):
-    """Get query suggestions based on indexed papers."""
-    # This would query paper titles, concepts, methods for autocomplete
-    # Simplified placeholder
-    suggestions = [
-        "Apa metode yang digunakan dalam paper tentang...",
-        "Bagaimana performa model X pada dataset Y?",
-        "Paper mana yang mengutip paper Z?",
-        "Konsep apa yang berkaitan dengan...",
-        "Dataset apa yang digunakan untuk task...",
+    """Query suggestions derived from indexed concepts and paper titles."""
+    suggestions: list[str] = [
+        "Apa metode terbaik untuk deteksi deepfake audio?",
+        "Dataset apa saja digunakan untuk evaluasi?",
+        "Bagaimana performa model LSTM-Attention untuk prediksi inflasi?",
+        "Konsep apa yang berkaitan dengan retrieval augmented generation?",
+        "Paper mana yang mengutip ECAPA-TDNN?",
     ]
-    return {"suggestions": [s for s in suggestions if partial.lower() in s.lower()][:limit]}
+    try:
+        async for session in get_neo4j_session():
+            res = await session.run("MATCH (c:Concept) RETURN c.name AS name ORDER BY name LIMIT 15")
+            concepts = [r["name"] for r in await res.data()]
+            suggestions += [f"Apa itu {c}?" for c in concepts[:6]]
+            res2 = await session.run("MATCH (p:Paper) RETURN p.title AS title ORDER BY p.year DESC LIMIT 10")
+            titles = [r["title"] for r in await res2.data()]
+            suggestions += [f"Ringkas: {t[:80]}" for t in titles[:3]]
+    except Exception as e:
+        logger.debug(f"Suggestions graph lookup skipped: {e}")
+    q = partial.strip().lower()
+    if q:
+        suggestions = [s for s in suggestions if q in s.lower()]
+    unique: list[str] = []
+    for s in suggestions:
+        if s not in unique:
+            unique.append(s)
+    return {"suggestions": unique[:limit]}
 
 
 async def _get_query_embedding(query: str) -> list[float]:
-    """
-    Generate embedding for query.
-    Placeholder - replace with actual embedding API call.
-    """
-    # In production, call OpenRouter embedding API or local model
-    # For now, return dummy embedding (768 dims for nomic-embed-text)
-    import hashlib
-    hash_obj = hashlib.md5(query.encode())
-    # Generate pseudo-embedding from hash
-    embedding = [(int(hash_obj.hexdigest()[i:i+2], 16) - 128) / 128.0 for i in range(0, 32, 2)]
-    # Pad to 768 dims
-    embedding = embedding * (768 // len(embedding))
-    return embedding[:768]
+    """Generate embedding for query using OpenRouter embedding service."""
+    service = await get_embedding_service()
+    if not service:
+        raise ValueError("Embedding service not configured: missing OpenRouter API key")
+    return await service.embed_text(query)
 
 
 @router.post("/stream")

@@ -24,6 +24,10 @@ Required `.env` variables:
 ```env
 OPENROUTER_API_KEY=your_key_here
 NEO4J_PASSWORD=your_secure_password
+
+# FREE MODELS ONLY (no paid, no local)
+LLM_MODEL=inclusionai/ling-3.2-flash:free
+EMBEDDING_MODEL=nomic-embed-text-v1.5:free
 ```
 
 ## 2. Start Services
