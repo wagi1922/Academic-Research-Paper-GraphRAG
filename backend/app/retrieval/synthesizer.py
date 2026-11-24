@@ -71,7 +71,7 @@ class AnswerSynthesizer:
                 ],
                 response_model=QueryResponse,
                 temperature=0.1,
-                max_tokens=2000,
+                max_tokens=3000,
             )
 
             # Validate citations against sources
@@ -179,7 +179,7 @@ class StreamingSynthesizer:
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.1,
-                max_tokens=2000,
+                max_tokens=3000,
                 stream=True,
             )
 

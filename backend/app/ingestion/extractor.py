@@ -68,7 +68,15 @@ VALID RELATION EXAMPLES:
 TEXT TO ANALYZE:
 {text}
 
-Return structured output matching the ExtractedEntities schema."""
+Return structured output matching this EXACT JSON schema (all 5 keys required, empty lists if none):
+{
+  "authors": [{"name": "...", "institution": "..."}],
+  "concepts": [{"name": "...", "category": "..."}],
+  "methods": [{"name": "...", "description": "..."}],
+  "datasets": [{"name": "...", "domain": "..."}],
+  "relations": [{"source_type": "Paper", "source_name": "current paper", "relation": "USES_METHOD", "target_type": "Method", "target_name": "..."}]
+}
+OUTPUT ONLY VALID JSON. NO REASONING. NO MARKDOWN. NO EXTRA TEXT."""
 
 
 class EntityExtractor:
@@ -188,6 +196,7 @@ class EntityExtractor:
 
         # Deduplicate by name
         all_entities.authors = self._deduplicate_entities(all_entities.authors, "name")
+        all_entities.authors = self._split_author_names(all_entities.authors)
         all_entities.concepts = self._deduplicate_entities(all_entities.concepts, "name")
         all_entities.methods = self._deduplicate_entities(all_entities.methods, "name")
         all_entities.datasets = self._deduplicate_entities(all_entities.datasets, "name")
@@ -214,6 +223,21 @@ class EntityExtractor:
                 seen.add(key)
                 unique.append(r)
         return unique
+
+    def _split_author_names(self, authors: list) -> list:
+        """Split combined author names (e.g., 'A and B', 'A, B') into individual authors."""
+        import re
+        split_authors = []
+        for a in authors:
+            name = a.name.strip()
+            # Split on common delimiters
+            parts = re.split(r'\s+(?:and|&)\s+|,\s*', name)
+            for part in parts:
+                part = part.strip()
+                if part and len(part) > 2:  # Filter initials-only
+                    # Create new AuthorEntity with same institution
+                    split_authors.append(type(a)(name=part, institution=a.institution))
+        return split_authors if split_authors else authors
 
 
 # Simplified extractor for fallback (no instructor)

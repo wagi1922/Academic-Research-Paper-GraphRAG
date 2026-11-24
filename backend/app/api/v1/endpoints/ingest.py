@@ -3,7 +3,9 @@ Paper Ingestion Endpoint
 Handles PDF upload, parsing, chunking, entity extraction, and graph ingestion.
 """
 
+import hashlib
 import logging
+import re
 import uuid
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
@@ -15,6 +17,7 @@ from app.schemas.entities import (
     PaperCreate,
     ChunkCreate,
     ExtractedEntities,
+    AuthorEntity,
 )
 from app.ingestion.parser import PDFParser
 from app.ingestion.chunker import get_chunker, Chunk
@@ -25,6 +28,18 @@ from app.core.neo4j_driver import get_neo4j_session
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _slug_paper_id(doi: str | None, title: str) -> str:
+    """Deterministic, readable paper id from doi (or title fallback).
+
+    Long identifiers get a short md5 suffix to keep truncated slugs collision-free.
+    """
+    raw = (doi or "").strip() or (title or "").strip()
+    slug = re.sub(r"[^a-z0-9]+", "_", raw.lower()).strip("_")
+    if len(slug) > 100:
+        slug = slug[:100] + "_" + hashlib.md5(raw.encode()).hexdigest()[:8]
+    return slug or str(uuid.uuid4())[:12]
 
 router = APIRouter(prefix="/papers", tags=["ingestion"])
 
@@ -188,11 +203,20 @@ async def _process_ingestion(
             job.message = "Skipping entity extraction (no valid OpenRouter API key)"
             logger.warning("OpenRouter API key not set or placeholder, skipping entity extraction")
 
+        # Prefer Grobid-parsed authors (reliable, per-person) over LLM extraction
+        grobid_authors = parse_result.get("authors") or []
+        if grobid_authors:
+            entities.authors = [
+                AuthorEntity(name=n.strip(), institution="")
+                for n in grobid_authors
+                if n and n.strip()
+            ]
+
         # Step 4: Write to Neo4j
         job.progress = 70
         job.message = "Writing to graph database..."
 
-        paper_id = doi or str(uuid.uuid4())[:12]
+        paper_id = _slug_paper_id(doi, title)
         paper = PaperCreate(
             id=paper_id,
             title=title,
@@ -311,7 +335,7 @@ async def _process_batch_ingestion(
             doi = dois[idx] if idx < len(dois) and dois[idx] else None
             venue = venues[idx] if idx < len(venues) and venues[idx] else "arXiv"
 
-            paper_id = doi or str(uuid.uuid4())[:12]
+            paper_id = _slug_paper_id(doi, title)
 
             # Step 1: Parse PDF
             parser = PDFParser(grobid_url=settings.grobid_url)
@@ -370,6 +394,15 @@ async def _process_batch_ingestion(
                 entities = await extractor.extract_from_chunks([c.text for c in chunks], title)
             else:
                 logger.warning("OpenRouter API key not set or placeholder, skipping entity extraction")
+
+            # Prefer Grobid-parsed authors (reliable, per-person) over LLM extraction
+            grobid_authors = parse_result.get("authors") or []
+            if grobid_authors:
+                entities.authors = [
+                    AuthorEntity(name=n.strip(), institution="")
+                    for n in grobid_authors
+                    if n and n.strip()
+                ]
 
             # Step 4: Write to Neo4j
             paper = PaperCreate(

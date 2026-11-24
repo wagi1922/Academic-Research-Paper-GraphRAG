@@ -4,6 +4,7 @@ Batch Cypher operations for injecting entities and relations into Neo4j.
 """
 
 import logging
+import re
 from typing import Optional
 from neo4j import AsyncSession
 from app.schemas.entities import (
@@ -20,6 +21,12 @@ from app.schemas.entities import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _slug(text: str, max_len: int = 200) -> str:
+    """Deterministic entity id slug — stable across process restarts (unlike hash())."""
+    slug = re.sub(r"[^a-z0-9]+", "_", (text or "").lower().strip()).strip("_")
+    return slug[:max_len]
 
 
 class GraphWriter:
@@ -85,10 +92,10 @@ class GraphWriter:
         RETURN count(a) as created
         """
 
-        # Generate stable IDs for authors
+        # Generate stable IDs for authors (deterministic slug — same name across papers merges to one node)
         author_data = []
         for a in authors:
-            author_id = f"author_{abs(hash(a.name.lower().strip())) % 10**12}"
+            author_id = f"author_{_slug(a.name)}"
             author_data.append({
                 "id": author_id,
                 "name": a.name.strip(),
@@ -117,7 +124,7 @@ class GraphWriter:
 
         concept_data = []
         for c in concepts:
-            concept_id = f"concept_{abs(hash(c.name.lower().strip())) % 10**12}"
+            concept_id = f"concept_{_slug(c.name)}"
             concept_data.append({
                 "id": concept_id,
                 "name": c.name.strip(),
@@ -146,7 +153,7 @@ class GraphWriter:
 
         method_data = []
         for m in methods:
-            method_id = f"method_{abs(hash(m.name.lower().strip())) % 10**12}"
+            method_id = f"method_{_slug(m.name)}"
             method_data.append({
                 "id": method_id,
                 "name": m.name.strip(),
@@ -175,7 +182,7 @@ class GraphWriter:
 
         dataset_data = []
         for d in datasets:
-            dataset_id = f"dataset_{abs(hash(d.name.lower().strip())) % 10**12}"
+            dataset_id = f"dataset_{_slug(d.name)}"
             dataset_data.append({
                 "id": dataset_id,
                 "name": d.name.strip(),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
-import { api, type GraphNode, type GraphEdge, type GraphVisualizationData } from '@/services/api'
+import { api, type GraphNode, type GraphEdge, type GraphVisualization } from '@/services/api'
 import { useUIStore } from '@/stores/ui'
 import { useRoute } from 'vue-router'
 import GraphVisualizationComp from '@/components/graph/GraphVisualization.vue'
@@ -31,7 +31,7 @@ const searchQuery = ref('')
 const selectedType = ref('')
 
 // Graph visualization state
-const graphData = ref<GraphVisualizationData | null>(null)
+const graphData = ref<GraphVisualization | null>(null)
 const graphLoading = ref(false)
 const graphError = ref<string | null>(null)
 const selectedPaperId = ref<string | null>(route.query.paper_id as string || null)
@@ -42,6 +42,19 @@ const showControls = ref(true)
 const showLegend = ref(true)
 const showEntityPanel = ref(true)
 const graphRef = ref<InstanceType<typeof GraphVisualizationComp> | null>(null)
+
+// Transform API edges to component format
+const graphEdges = computed(() => {
+  if (!graphData.value?.edges) return []
+  return graphData.value.edges.map((e, i) => ({
+    id: `edge_${i}`,
+    source: e.source,
+    target: e.target,
+    label: e.relation,
+    type: e.relation.toLowerCase().replace('_', '-'),
+    properties: {},
+  }))
+})
 
 const entityTypes = computed(() => {
   const types = new Set(entities.value.map(e => e.type))
@@ -97,11 +110,12 @@ async function fetchGraph() {
   graphError.value = null
 
   try {
-    const data = await api.graphVisualize(
-      selectedPaperId.value || undefined,
-      2,
-      150
-    )
+    const data = await api.getGraphVisualization({
+      paperId: selectedPaperId.value || undefined,
+      nodeId: selectedNodeId.value || undefined,
+      depth: 2,
+      maxNodes: 150
+    })
     graphData.value = data
     graphError.value = null
   } catch (err) {
@@ -154,7 +168,7 @@ function handleNodeClick(node: GraphNode) {
 }
 
 function handleEdgeClick(edge: GraphEdge) {
-  uiStore.notify('info', `${edge.source} ${edge.label} ${edge.target}`)
+  uiStore.notify('info', `${edge.source} ${edge.relation} ${edge.target}`)
 }
 
 function clearSelection() {
@@ -352,7 +366,7 @@ onMounted(() => {
         <div class="flex items-center gap-3">
           <h2 class="text-lg font-semibold text-text-primary">Graph Visualization</h2>
           <span v-if="graphData" class="badge badge-secondary">
-            {{ graphData.nodes.length }} nodes, {{ graphData.edges.length }} edges
+            {{ graphData.nodes.length }} nodes, {{ graphEdges.length }} edges
           </span>
           <span v-if="selectedPaperId" class="badge badge-primary">
             Paper: {{ selectedPaperId.slice(0, 20) }}{{ selectedPaperId.length > 20 ? '...' : '' }}
@@ -420,7 +434,7 @@ onMounted(() => {
         <GraphVisualizationComp
           ref="graphRef"
           :nodes="graphData?.nodes || []"
-          :edges="graphData?.edges || []"
+          :edges="graphEdges"
           :layout="layout"
           :style-preset="stylePreset"
           :fit-on-init="true"

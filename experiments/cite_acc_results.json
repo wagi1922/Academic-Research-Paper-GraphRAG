@@ -1,0 +1,588 @@
+{
+  "cite_acc": 0.6808510638297872,
+  "correct": 32,
+  "total": 47,
+  "details": [
+    {
+      "question": "What is the main contribution of \"Do We Still Need GraphRAG? Benchmarking RAG an",
+      "expected": [
+        "2604.09666v1"
+      ],
+      "cited": [
+        "2604.09666v1"
+      ],
+      "matched": [
+        "2604.09666v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"FAIR GraphRAG: A Retrieval-Augmented Generatio",
+      "expected": [
+        "2607.11464v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What is the main contribution of \"OMD-GraphRAG: Enhancing GraphRAG with Ontology",
+      "expected": [
+        "2603.25152v3"
+      ],
+      "cited": [
+        "2603.25152v3"
+      ],
+      "matched": [
+        "2603.25152v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"Empowering GraphRAG with Knowledge Filtering a",
+      "expected": [
+        "2503.13804v1"
+      ],
+      "cited": [
+        "2503.13804v1"
+      ],
+      "matched": [
+        "2503.13804v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"GraphRAG Under Fire\"?",
+      "expected": [
+        "2501.14050v4"
+      ],
+      "cited": [
+        "2506.06331v2"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What is the main contribution of \"How Significant Are the Real Performance Gains",
+      "expected": [
+        "2506.06331v2"
+      ],
+      "cited": [
+        "2506.06331v2"
+      ],
+      "matched": [
+        "2506.06331v2"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"PolyG: Adaptive Graph Traversal for Diverse Gr",
+      "expected": [
+        "2504.02112v2"
+      ],
+      "cited": [
+        "2504.02112v2"
+      ],
+      "matched": [
+        "2504.02112v2"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"LEGO-GraphRAG: Modularizing Graph-based Retrie",
+      "expected": [
+        "2411.05844v3"
+      ],
+      "cited": [
+        "2411.05844v3"
+      ],
+      "matched": [
+        "2411.05844v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the main contribution of \"Retrieval-Augmented Generation with Graphs (Gr",
+      "expected": [
+        "2501.00309v2"
+      ],
+      "cited": [
+        "2604.09666v1",
+        "2411.05844v3"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "How does \"Domain-specific information retrieval\" improve retrieval-augmented gen",
+      "expected": [
+        "2611.08228v1"
+      ],
+      "cited": [
+        "2611.08228v1",
+        "2506.06331v2",
+        "2411.05844v3",
+        "2501.00309v2"
+      ],
+      "matched": [
+        "2611.08228v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"Expert Mind: A Retrieval-Augmented Architecture for Expert Knowledge P",
+      "expected": [
+        "2603.14541v1"
+      ],
+      "cited": [
+        "2603.14541v1"
+      ],
+      "matched": [
+        "2603.14541v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"Tensor Manifold-Based Graph-Vector Fusion for AI-Native Academic Liter",
+      "expected": [
+        "2604.16416v1"
+      ],
+      "cited": [
+        "2604.16416v1"
+      ],
+      "matched": [
+        "2604.16416v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"AR-RAG: Autoregressive Retrieval Augmentation for Image Generation\" im",
+      "expected": [
+        "2506.06962v3"
+      ],
+      "cited": [
+        "2506.06962v3"
+      ],
+      "matched": [
+        "2506.06962v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"Beyond Model Base Retrieval: Weaving Knowledge to Master Fine-grained ",
+      "expected": [
+        "2507.15336v3"
+      ],
+      "cited": [
+        "2507.15336v3"
+      ],
+      "matched": [
+        "2507.15336v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What citation analysis method does \"Where Do Your Citations Come From? Citation-",
+      "expected": [
+        "2603.24216v1"
+      ],
+      "cited": [
+        "2603.24216v1"
+      ],
+      "matched": [
+        "2603.24216v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What citation analysis method does \"Citation Failure: Definition, Analysis and E",
+      "expected": [
+        "2510.20303v3"
+      ],
+      "cited": [
+        "2510.20303v3"
+      ],
+      "matched": [
+        "2510.20303v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What citation analysis method does \"Streamlining and standardizing software cita",
+      "expected": [
+        "5ef495fc-9f4"
+      ],
+      "cited": [
+        "5ef495fc-9f4",
+        "2406.04405v3"
+      ],
+      "matched": [
+        "5ef495fc-9f4"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What citation analysis method does \"Streamlining and standardizing software cita",
+      "expected": [
+        "2406.04405v3"
+      ],
+      "cited": [
+        "2406.04405v3",
+        "5ef495fc-9f4"
+      ],
+      "matched": [
+        "2406.04405v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What citation analysis method does \"Wikipedia Citations: Reproducible Citation E",
+      "expected": [
+        "2406.19291v1"
+      ],
+      "cited": [
+        "2406.19291v1"
+      ],
+      "matched": [
+        "2406.19291v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What approach does \"RawBMamba: End-to-End Bidirectional State Space Model for Au",
+      "expected": [
+        "2406.06086v2"
+      ],
+      "cited": [
+        "2406.06086v2"
+      ],
+      "matched": [
+        "2406.06086v2"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What approach does \"Explaining the Attention Mechanism of End-to-End Speech Reco",
+      "expected": [
+        "2110.03879v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What approach does \"Multi-layer Attention Mechanism for Speech Keyword Recogniti",
+      "expected": [
+        "1907.04536v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What graph learning technique is central to \"RLHGNN: Reinforcement Learning-driv",
+      "expected": [
+        "2507.02690v1"
+      ],
+      "cited": [
+        "2507.02690v1"
+      ],
+      "matched": [
+        "2507.02690v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What graph learning technique is central to \"How Can Graph Neural Networks Help ",
+      "expected": [
+        "2201.04672v1"
+      ],
+      "cited": [
+        "2201.04672v1"
+      ],
+      "matched": [
+        "2201.04672v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What graph learning technique is central to \"Subsampling for Knowledge Graph Emb",
+      "expected": [
+        "2209.12801v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What graph learning technique is central to \"Unbiased Graph Embedding with Biase",
+      "expected": [
+        "2110.13957v4"
+      ],
+      "cited": [
+        "2110.13957v4"
+      ],
+      "matched": [
+        "2110.13957v4"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What graph learning technique is central to \"Learning Universal Graph Neural Net",
+      "expected": [
+        "1909.10086v3"
+      ],
+      "cited": [
+        "1909.10086v3"
+      ],
+      "matched": [
+        "1909.10086v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"A Multi-Agent System for Semantic Mapping of Relational Data to Knowle",
+      "expected": [
+        "2511.06455v1"
+      ],
+      "cited": [
+        "2511.06455v1"
+      ],
+      "matched": [
+        "2511.06455v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"AI Agent-Driven Framework for Automated Product Knowledge Graph Constr",
+      "expected": [
+        "2511.11017v1"
+      ],
+      "cited": [
+        "2511.11017v1"
+      ],
+      "matched": [
+        "2511.11017v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"KG20C & KG20C-QA: Scholarly Knowledge Graph Benchmarks for Link Predic",
+      "expected": [
+        "2512.21799v2"
+      ],
+      "cited": [
+        "2512.21799v2"
+      ],
+      "matched": [
+        "2512.21799v2"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does \"Capturing and Anticipating User Intents in Data Analytics via Knowledg",
+      "expected": [
+        "2411.01023v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "How does \"Unifying Large Language Models and Knowledge Graphs: A Roadmap\" integr",
+      "expected": [
+        "2306.08302v3"
+      ],
+      "cited": [
+        "2306.08302v3"
+      ],
+      "matched": [
+        "2306.08302v3"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the scope of the survey \"When to use Graphs in RAG: A Comprehensive Anal",
+      "expected": [
+        "2506.05690v3"
+      ],
+      "cited": [
+        "2501.00309v2"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What is the scope of the survey \"A Survey on Transformer Compression\"?",
+      "expected": [
+        "2402.05964v2"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What is the scope of the survey \"Automated Literature Review Using NLP Technique",
+      "expected": [
+        "2411.18583v1"
+      ],
+      "cited": [
+        "2411.18583v1"
+      ],
+      "matched": [
+        "2411.18583v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What agent architecture does \"Do We Still Need GraphRAG? Benchmarking RAG and Gr",
+      "expected": [
+        "2604.09666v1"
+      ],
+      "cited": [
+        "2604.09666v1"
+      ],
+      "matched": [
+        "2604.09666v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What agent architecture does \"A Multi-Agent System for Semantic Mapping of Relat",
+      "expected": [
+        "2511.06455v1"
+      ],
+      "cited": [
+        "2511.06455v1"
+      ],
+      "matched": [
+        "2511.06455v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What agent architecture does \"AI Agent-Driven Framework for Automated Product Kn",
+      "expected": [
+        "2511.11017v1"
+      ],
+      "cited": [
+        "2511.11017v1"
+      ],
+      "matched": [
+        "2511.11017v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What evaluation framework does \"Do We Still Need GraphRAG? Benchmarking RAG and ",
+      "expected": [
+        "2604.09666v1"
+      ],
+      "cited": [
+        "2604.09666v1"
+      ],
+      "matched": [
+        "2604.09666v1"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What evaluation framework does \"How Significant Are the Real Performance Gains? ",
+      "expected": [
+        "2506.06331v2"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What evaluation framework does \"KG20C & KG20C-QA: Scholarly Knowledge Graph Benc",
+      "expected": [
+        "2512.21799v2"
+      ],
+      "cited": [
+        "2512.21799v2"
+      ],
+      "matched": [
+        "2512.21799v2"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What evaluation framework does \"A Review on Method Entities in the Academic Lite",
+      "expected": [
+        "2209.03687v1"
+      ],
+      "cited": [
+        "2506.06331v2"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "Compare GraphRAG approaches with standard RAG retrieval enhancements.",
+      "expected": [
+        "2611.08228v1",
+        "2604.09666v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "How do GraphRAG evaluation frameworks assess retrieval vs generation quality?",
+      "expected": [
+        "2604.09666v1"
+      ],
+      "cited": [
+        "2506.06331v2",
+        "2411.05844v3"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "How do multi-agent systems leverage knowledge graphs for complex reasoning?",
+      "expected": [
+        "2604.09666v1",
+        "2511.06455v1"
+      ],
+      "cited": [],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "How can citation networks improve knowledge graph construction for LLMs?",
+      "expected": [
+        "2511.06455v1",
+        "2603.24216v1"
+      ],
+      "cited": [
+        "2411.05844v3",
+        "2406.19291v1",
+        "2506.06331v2",
+        "2501.14050v4",
+        "2510.20303v3",
+        "2512.21799v2"
+      ],
+      "matched": [],
+      "correct": false
+    },
+    {
+      "question": "What graph neural network techniques benefit GraphRAG retrieval?",
+      "expected": [
+        "2604.09666v1",
+        "2507.02690v1"
+      ],
+      "cited": [
+        "2604.09666v1",
+        "2411.05844v3",
+        "2504.02112v2"
+      ],
+      "matched": [
+        "2604.09666v1"
+      ],
+      "correct": true
+    }
+  ]
+}

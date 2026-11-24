@@ -229,10 +229,15 @@ export const api = {
   getGraphStats: () => fetchApi<GraphStats>('/graph/stats'),
 
   // Graph visualization
-  getGraphVisualization: (paperId: string, depth = 2, maxNodes = 150) =>
-    fetchApi<GraphVisualization>(
-      `/graph/visualize?paper_id=${encodeURIComponent(paperId)}&depth=${depth}&max_nodes=${maxNodes}`
-    ),
+  getGraphVisualization: (params: { paperId?: string; nodeId?: string; depth?: number; maxNodes?: number }) => {
+  const { paperId, nodeId, depth = 2, maxNodes = 150 } = params
+  const searchParams = new URLSearchParams()
+  if (paperId) searchParams.set('paper_id', paperId)
+  if (nodeId) searchParams.set('node_id', nodeId)
+  searchParams.set('depth', depth.toString())
+  searchParams.set('max_nodes', maxNodes.toString())
+  return fetchApi<GraphVisualization>(`/graph/visualize?${searchParams.toString()}`)
+  },
 
   // Entities
   listEntities: (params?: { q?: string; type?: string; limit?: number }) => {
